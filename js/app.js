@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 6. Lógica de Checklist e Fotos
+  // Captura cliques nos botões de foto e o envio do arquivo
   sectionsContainer.addEventListener('click', (e) => {
     // Opções
     const opt = e.target.closest('.opt');
@@ -105,25 +106,56 @@ document.addEventListener('DOMContentLoaded', () => {
       opt.querySelector('input').checked = true;
       updateGauges();
     }
+    
     // Botão de Foto
     if (e.target.classList.contains('photo-btn')) {
+      // Dispara o input de arquivo oculto ao lado do botão
       e.target.nextElementSibling.click();
     }
   });
 
+  // Evento de mudança para upload de fotos
   sectionsContainer.addEventListener('change', async (e) => {
     if (e.target.type === 'file' && e.target.files.length > 0) {
+      // Verifica se a inspeção foi salva
+      if (!currentRecordId) {
+        alert("Salve a inspeção antes de anexar fotos.");
+        e.target.value = '';
+        return;
+      }
+
       const file = e.target.files[0];
       const itemCell = e.target.closest('.photo-cell');
       const itemId = itemCell.dataset.photoItem;
-      itemCell.querySelector('.photo-thumb-wrap').innerHTML = 'Carregando...';
+      const thumbWrap = itemCell.querySelector('.photo-thumb-wrap');
+
+      thumbWrap.innerHTML = 'Carregando...';
+
       try {
+        // Usa o StorageService para processar e subir a imagem
         const url = await StorageService.uploadPhoto(currentRecordId, itemId, file);
+        
+        // Atualiza o estado local e a interface
         photoUrls[itemId] = url;
-        itemCell.querySelector('.photo-thumb-wrap').innerHTML = `<div class="photo-thumb"><img src="${url}"></div>`;
+        thumbWrap.innerHTML = `
+          <div class="photo-thumb">
+            <img src="${url}">
+            <button type="button" class="photo-remove" data-item="${itemId}">x</button>
+          </div>`;
+        
+        // Adiciona evento para remover a foto
+        const removeBtn = thumbWrap.querySelector('.photo-remove');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            delete photoUrls[itemId];
+            thumbWrap.innerHTML = '';
+          });
+        }
       } catch (err) {
-        alert(err.message);
-        itemCell.querySelector('.photo-thumb-wrap').innerHTML = '';
+        console.error("Erro no upload:", err);
+        alert("Falha ao subir foto: " + err.message);
+        thumbWrap.innerHTML = '';
       }
     }
   });
@@ -144,9 +176,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 7. Salvamento e PDF
   async function collectState() {
-    const state = { text: {}, radios: {}, status: document.getElementById('status-select').value, photoUrls: { ...photoUrls }, seq: currentSeq, emissionLog: emissionLog };
-    document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => { if (el.id) state.text[el.id] = el.value; });
-    document.querySelectorAll('input[type=radio]:checked').forEach(r => { state.radios[r.name] = r.value; });
+    const state = { 
+      text: {}, 
+      radios: {}, 
+      status: document.getElementById('status-select').value, 
+      photoUrls: { ...photoUrls }, 
+      seq: currentSeq, 
+      emissionLog: emissionLog 
+    };
+    document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => { 
+      if (el.id) state.text[el.id] = el.value; 
+    });
+    document.querySelectorAll('input[type=radio]:checked').forEach(r => { 
+      state.radios[r.name] = r.value; 
+    });
     state.signatures = {
       methodUsed: signatureManager.currentMethod,
       respIns: await signatureManager.collectSignature('respIns'),
@@ -183,8 +226,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
     document.querySelectorAll('.opt').forEach(el => el.classList.remove('sel'));
-    photoUrls = {}; currentSeq = null; updateGauges();
-    canvasProvider.clear('respIns'); canvasProvider.clear('repCli');
+    photoUrls = {}; 
+    currentSeq = null; 
+    updateGauges();
+    canvasProvider.clear('respIns'); 
+    canvasProvider.clear('repCli');
   }
 
   async function loadRecord(id) {
@@ -192,16 +238,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state) return;
     currentRecordId = id;
     clearFormUI();
-    Object.entries(state.text || {}).forEach(([key, val]) => { const el = document.getElementById(key); if (el) el.value = val; });
+    Object.entries(state.text || {}).forEach(([key, val]) => { 
+      const el = document.getElementById(key); 
+      if (el) el.value = val; 
+    });
     Object.entries(state.radios || {}).forEach(([name, val]) => {
       const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
-      if (input) { input.checked = true; input.closest('label').classList.add('sel'); }
+      if (input) { 
+        input.checked = true; 
+        input.closest('label').classList.add('sel'); 
+      }
     });
     document.getElementById('status-select').value = state.status || 'rascunho';
     photoUrls = state.photoUrls || {};
     currentSeq = state.seq || null;
     document.getElementById('rec-id-label').textContent = `ID ${id}`;
-    screenList.style.display = 'none'; screenForm.style.display = '';
+    screenList.style.display = 'none'; 
+    screenForm.style.display = '';
     updateGauges();
   }
 });
