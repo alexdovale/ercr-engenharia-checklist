@@ -1,1324 +1,296 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checklist de Inspeção e Perícia Técnica Veicular</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<style>
-  :root{
-    --graphite:#1C2226; --panel:#242B30; --paper:#F4F1E9; --paper-line:#E4DFD1;
-    --ink:#20262B; --steel:#3B5166; --steel-light:#5C7A93; --amber:#E8A33D;
-    --green:#3F7A5C; --green-bg:#E4EFE7; --red:#B5503F; --red-bg:#F4E4E0; --muted:#7C8790;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--graphite);font-family:'IBM Plex Sans',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
-  .mono{font-family:'IBM Plex Mono',monospace;}
-
-  header.dash{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#20262B 0%, #1C2226 100%);border-bottom:3px solid var(--amber);padding:14px 18px;color:#EDEAE0;}
-  .dash-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
-  .dash-title{font-size:15px;letter-spacing:.04em;font-weight:600;}
-  .dash-title small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.12em;margin-top:2px;}
-  .gauges{display:flex;gap:10px;flex-wrap:wrap;}
-  .gauge{background:var(--panel);border:1px solid #384049;border-radius:4px;padding:6px 10px;min-width:60px;text-align:center;}
-  .gauge .num{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;line-height:1;}
-  .gauge .lbl{font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-top:3px;}
-  .gauge.ok .num{color:#7DBE9A;} .gauge.bad .num{color:#E08D7B;} .gauge.na .num{color:#9AA6AE;} .gauge.pend .num{color:var(--amber);}
-  .progress-track{margin-top:10px;height:5px;background:#33393F;border-radius:3px;overflow:hidden;display:flex;}
-  .progress-track div{height:100%;}
-  .dash-controls{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
-  .dash-controls select{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--panel);color:#EDEAE0;border:1px solid #444C54;border-radius:4px;padding:6px 8px;}
-  .dash-controls .rec-id{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);}
-  .btn-link{background:transparent;border:1px solid #444C54;color:#CDD3D8;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
-  .btn-link:hover{border-color:var(--amber);color:var(--amber);}
-
-  main{max-width:900px;margin:0 auto;padding:24px 16px 80px;}
-  .sheet{background:var(--paper);border:1px solid var(--paper-line);border-radius:2px;margin-bottom:22px;box-shadow:0 1px 0 rgba(0,0,0,.15), 0 8px 20px -12px rgba(0,0,0,.4);overflow:hidden;}
-  .sheet-head{display:flex;align-items:baseline;gap:12px;background:var(--steel);color:#F4F1E9;padding:12px 18px;}
-  .sheet-head .n{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);}
-  .sheet-head h2{font-size:14px;letter-spacing:.05em;margin:0;text-transform:uppercase;font-weight:600;flex:1;}
-  .seq-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#20262B;background:var(--amber);padding:4px 10px;border-radius:20px;letter-spacing:.03em;white-space:nowrap;}
-  .sheet-body{padding:16px 18px 20px;}
-
-  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
-  @media (max-width:560px){.field-grid{grid-template-columns:1fr;}}
-  .field label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--steel);margin-bottom:4px;}
-  .field input[type=text],.field input[type=date],.field input[type=time],.field textarea,.field select{width:100%;padding:8px 9px;border:1px solid #C9C2AE;border-radius:3px;background:#FFFEFB;font-family:inherit;font-size:14px;color:var(--ink);}
-  .field textarea{resize:vertical;min-height:60px;}
-  .field input:focus,.field textarea:focus{outline:2px solid var(--amber);outline-offset:0;border-color:var(--amber);}
-
-  .item-row{display:grid;grid-template-columns:1fr 200px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--paper-line);}
-  .item-row:last-child{border-bottom:none;}
-  .item-num{font-family:'IBM Plex Mono',monospace;color:var(--steel-light);font-size:12px;margin-right:6px;}
-  .item-text{font-size:13.5px;line-height:1.35;}
-  .opts{display:flex;gap:4px;}
-  .opt{flex:1;text-align:center;font-size:10px;font-weight:600;letter-spacing:.02em;border:1px solid #C9C2AE;border-radius:3px;padding:7px 2px;cursor:pointer;background:#FFFEFB;color:var(--muted);transition:background .12s,color .12s,border-color .12s;user-select:none;position:relative;}
-  .opt input{position:absolute;opacity:0;width:0;height:0;}
-  .opt.c.sel{background:var(--green-bg);border-color:var(--green);color:var(--green);}
-  .opt.nc.sel{background:var(--red-bg);border-color:var(--red);color:var(--red);}
-  .opt.na.sel{background:#EAEAEA;border-color:#9AA6AE;color:#5A6268;}
-  @media (max-width:560px){.item-row{grid-template-columns:1fr;}}
-
-  .nc-block{border:1px solid var(--paper-line);border-radius:4px;padding:14px;margin-bottom:14px;background:#FBF9F3;}
-  .nc-block h3{margin:0 0 10px;font-size:12px;letter-spacing:.06em;color:var(--steel);text-transform:uppercase;}
-  .crit-opts{display:flex;gap:8px;margin-top:4px;}
-  .crit{padding:6px 12px;border:1px solid #C9C2AE;border-radius:3px;font-size:12px;cursor:pointer;background:#FFFEFB;position:relative;}
-  .crit input{position:absolute;opacity:0;}
-  .crit.low.sel{background:#E4EFE7;border-color:var(--green);color:var(--green);}
-  .crit.med.sel{background:#FBF0DA;border-color:var(--amber);color:#946A16;}
-  .crit.high.sel{background:var(--red-bg);border-color:var(--red);color:var(--red);}
-
-  .class-opts{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
-  .class-opt{border:1px solid #C9C2AE;border-radius:4px;padding:10px 12px;cursor:pointer;font-size:13.5px;font-weight:600;background:#FFFEFB;position:relative;}
-  .class-opt input{position:absolute;opacity:0;}
-  .class-opt.sel-apto{background:var(--green-bg);border-color:var(--green);color:var(--green);}
-  .class-opt.sel-restr{background:#FBF0DA;border-color:var(--amber);color:#946A16;}
-  .class-opt.sel-inapto{background:var(--red-bg);border-color:var(--red);color:var(--red);}
-
-  .actions{position:sticky;bottom:0;background:var(--graphite);padding:14px 16px;display:flex;gap:10px;justify-content:center;border-top:1px solid #33393F;flex-wrap:wrap;}
-  button.primary,button.secondary,button.danger{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13.5px;border:none;border-radius:4px;padding:12px 20px;cursor:pointer;letter-spacing:.02em;}
-  button.primary{background:var(--amber);color:#20262B;}
-  button.primary:hover{background:#F0B15B;}
-  button.secondary{background:transparent;color:#CDD3D8;border:1px solid #444C54;}
-  button.secondary:hover{border-color:var(--amber);color:var(--amber);}
-  button.danger{background:transparent;color:#E08D7B;border:1px solid #6B3A34;}
-  button.danger:hover{border-color:var(--red);}
-  .footnote{text-align:center;color:var(--muted);font-size:11px;padding:6px 16px 0;}
-  .brand-footer{text-align:center;color:#8B8474;font-size:11px;padding:20px 0 0;font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;}
-
-  /* List screen */
-  .list-main{max-width:760px;margin:0 auto;padding:20px 16px 60px;}
-  .list-empty{color:#CDD3D8;text-align:center;padding:60px 16px;font-size:14px;}
-  .card{background:var(--paper);border:1px solid var(--paper-line);border-radius:6px;padding:14px 16px;margin-bottom:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:transform .1s;}
-  .card:hover{transform:translateY(-1px);border-color:var(--steel);}
-  .card .info .placa{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px;}
-  .card .info .meta{font-size:12px;color:var(--muted);margin-top:3px;}
-  .badge{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:20px;white-space:nowrap;}
-  .badge.rascunho{background:#E7E2D3;color:#7A6E4E;}
-  .badge.pendente{background:#FBF0DA;color:#946A16;}
-  .badge.revisado{background:var(--green-bg);color:var(--green);}
-  .list-loading{color:#CDD3D8;text-align:center;padding:40px;font-size:13px;}
-
-  /* Photo widgets */
-  .item-row{grid-template-columns:1fr 200px 40px;}
-  @media (max-width:560px){.item-row{grid-template-columns:1fr;}}
-  .photo-cell{display:flex;align-items:center;justify-content:center;}
-  .photo-btn{width:34px;height:34px;border-radius:4px;border:1px solid #C9C2AE;background:#FFFEFB;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--steel);}
-  .photo-btn:hover{border-color:var(--amber);}
-  .photo-thumb{position:relative;width:34px;height:34px;border-radius:4px;overflow:hidden;border:1px solid var(--steel);}
-  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .photo-remove{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;line-height:1;cursor:pointer;padding:0;}
-  .nc-block .photo-cell{justify-content:flex-start;}
-
-  .sig-pad-wrap{position:relative;}
-  .sig-pad{width:100%;height:150px;display:block;background:#FFFEFB;border:1px dashed #B9B29A;border-radius:4px;touch-action:none;cursor:crosshair;}
-  .sig-clear{margin-top:6px;}
-
-  /* Lock screen */
-  #screen-lock{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--graphite);}
-  .lock-box{background:var(--panel);border:1px solid #384049;border-radius:8px;padding:28px 24px;max-width:320px;width:88%;text-align:center;}
-  .lock-box .lock-title{color:#EDEAE0;font-size:15px;font-weight:600;margin-bottom:10px;letter-spacing:.03em;}
-  .lock-box p{color:#9AA6AE;font-size:12.5px;line-height:1.4;}
-  .lock-box input{width:100%;padding:10px;margin:12px 0;border-radius:4px;border:1px solid #444C54;background:#1C2226;color:#EDEAE0;font-family:inherit;font-size:14px;}
-  .lock-box button{width:100%;}
-  .lock-error{color:#E08D7B;font-size:12px;margin-top:6px;}
-
-  #print-report{display:none;}
-
-  @media print{
-    body *{visibility:hidden;}
-    #print-report, #print-report *{visibility:visible;}
-    header.dash,.actions,.footnote,#screen-list,#screen-lock,#screen-form{display:none !important;}
-    #print-report{display:block !important;position:absolute;top:0;left:0;width:100%;}
-    body{background:#fff;}
-
-    @page{ size:A4; margin:16mm 14mm 34mm 14mm; }
-
-    .pr-page{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5px;line-height:1.45;}
-    .pr-title{font-size:15px;font-weight:700;margin-bottom:10px;}
-    .pr-seq{position:absolute;top:0;right:0;font-size:9px;font-weight:700;color:#333;}
-    .pr-section-title{font-size:11.5px;font-weight:700;margin:16px 0 6px;break-after:avoid;}
-    .pr-field-line{margin-bottom:5px;}
-    .pr-field-line b{font-weight:400;border-bottom:1px solid #111;padding-bottom:1px;}
-    .pr-field-pair{display:flex;gap:24px;margin-bottom:5px;flex-wrap:wrap;}
-    .pr-field-pair > div{flex:1;min-width:180px;}
-
-    table.pr-table{width:100%;border-collapse:collapse;margin-bottom:4px;}
-    table.pr-table th{font-weight:700;font-size:10px;text-align:center;padding:4px 3px;border-bottom:1px solid #111;}
-    table.pr-table th:first-child{text-align:left;}
-    table.pr-table td{padding:4px 3px;font-size:10px;vertical-align:top;border-bottom:1px dotted #ccc;}
-    table.pr-table td.pr-item-cell{text-align:left;}
-    table.pr-table td.pr-circle-cell{text-align:center;width:70px;}
-    .pr-circle{display:inline-block;width:11px;height:11px;border:1.3px solid #333;border-radius:50%;}
-    .pr-circle.filled{background:#111;}
-    .pr-row{break-inside:avoid;}
-    .pr-photo-thumb{display:block;margin-top:3px;max-width:70px;max-height:70px;border:1px solid #999;}
-
-    .pr-special-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dotted #ccc;font-size:10px;}
-    .pr-special-opts{display:flex;gap:14px;}
-    .pr-special-opts span{display:flex;align-items:center;gap:4px;}
-
-    .pr-nc-block{border:1px solid #999;border-radius:3px;padding:8px 10px;margin-bottom:8px;break-inside:avoid;}
-    .pr-nc-block h4{margin:0 0 4px;font-size:11px;}
-    .pr-crit-row{display:flex;gap:10px;align-items:center;margin-top:3px;}
-    .pr-checkbox{display:inline-block;width:9px;height:9px;border:1.2px solid #333;margin-right:3px;position:relative;top:1px;}
-    .pr-checkbox.checked{background:#111;}
-
-    .pr-class-opt{margin-bottom:4px;}
-    .pr-signature-img{max-width:180px;max-height:60px;margin-top:2px;}
-
-    .pr-footer{position:fixed;left:0;bottom:0;width:100%;height:26mm;}
-    .pr-wave-svg{position:absolute;left:0;bottom:0;width:100%;height:100%;display:block;}
-    .pr-footer-content{position:absolute;left:0;bottom:0;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 14mm 5mm;box-sizing:border-box;}
-    .pr-footer-brand{display:flex;align-items:center;gap:8px;}
-    .pr-footer-brand img{width:34px;height:auto;}
-    .pr-footer-brand .txt{color:#fff;line-height:1.25;}
-    .pr-footer-brand .txt .name{font-size:11px;font-weight:700;letter-spacing:.03em;}
-    .pr-footer-brand .txt .sub{font-size:8px;letter-spacing:.15em;}
-    .pr-footer-right{color:#fff;font-size:8.5px;text-align:right;line-height:1.5;}
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checklist de Inspeção e Perícia Técnica Veicular</title>
+  
+  <!-- Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+  
+  <!-- SDKs do Firebase (Versão Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 </head>
 <body>
 
-<div id="screen-lock" style="display:none">
-  <div class="lock-box">
-    <div class="lock-title">🔒 CHECKLIST DE INSPEÇÃO VEICULAR</div>
-    <div id="lock-content"></div>
+  <!-- Tela de Bloqueio (Login) -->
+  <div id="screen-lock" style="display:none">
+    <div class="lock-box">
+      <div class="lock-title">🔒 CHECKLIST DE INSPEÇÃO VEICULAR</div>
+      <div id="lock-content"></div>
+    </div>
   </div>
-</div>
 
-<div id="screen-list" class="screen" style="display:none">
-  <header class="dash">
-    <div class="dash-top">
-      <div class="dash-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR
-        <small>ERCR ENGENHARIA MECÂNICA · INSPEÇÕES REGISTRADAS</small>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-link" id="btn-logout">🚪 Sair</button>
-        <button class="primary" id="btn-new-inspection">+ Nova Inspeção</button>
-      </div>
-    </div>
-  </header>
-  <main class="list-main">
-    <div id="inspection-list"><div class="list-loading">Carregando inspeções…</div></div>
-  </main>
-</div>
-
-<div id="screen-form" class="screen" style="display:none">
-  <header class="dash">
-    <div class="dash-top">
-      <div class="dash-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR
-        <small id="rec-id-label">ERCR ENGENHARIA MECÂNICA · (21) 96414-6270</small>
-      </div>
-      <div class="gauges">
-        <div class="gauge ok"><div class="num" id="cnt-c">0</div><div class="lbl">Conforme</div></div>
-        <div class="gauge bad"><div class="num" id="cnt-nc">0</div><div class="lbl">N. Conf.</div></div>
-        <div class="gauge na"><div class="num" id="cnt-na">0</div><div class="lbl">N/A</div></div>
-        <div class="gauge pend"><div class="num" id="cnt-pend">0</div><div class="lbl">Pendente</div></div>
-      </div>
-    </div>
-    <div class="progress-track" id="progress-track"></div>
-    <div class="dash-controls">
-      <button class="btn-link" id="btn-back-list">← Voltar à Lista</button>
-      <label style="font-size:11px;color:var(--muted);">Status:
-        <select id="status-select">
-          <option value="rascunho">Rascunho</option>
-          <option value="pendente_revisao">Pendente de Revisão</option>
-          <option value="revisado">Revisado / Aprovado</option>
-        </select>
-      </label>
-      <span class="rec-id" id="emission-log"></span>
-    </div>
-  </header>
-
-  <main>
-    <section class="sheet">
-      <div class="sheet-head"><span class="n">·</span><h2>Identificação da Inspeção</h2><span class="seq-badge" id="seq-badge" style="display:none;"></span></div>
-      <div class="sheet-body">
-        <div class="field-grid">
-          <div class="field" style="grid-column:1/-1"><label>Empresa Responsável</label><input type="text" id="empresa"></div>
-          <div class="field"><label>CNPJ</label><input type="text" id="cnpj"></div>
-          <div class="field"><label>Data da Inspeção</label><input type="date" id="dataInsp"></div>
-          <div class="field"><label>Horário</label><input type="time" id="horario"></div>
-          <div class="field"><label>Município/UF</label><input type="text" id="municipio"></div>
-          <div class="field" style="grid-column:1/-1"><label>Local da Inspeção</label><input type="text" id="local"></div>
-          <div class="field"><label>Responsável pelo Veículo</label><input type="text" id="respVeic"></div>
-          <div class="field"><label>Cargo/Função</label><input type="text" id="cargoFunc"></div>
-          <div class="field"><label>Telefone</label><input type="text" id="telefone" placeholder="(  ) _____-____"></div>
+  <!-- Tela de Listagem (Dashboard) -->
+  <div id="screen-list" class="screen" style="display:none">
+    <header class="dash">
+      <div class="dash-top">
+        <div class="dash-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR
+          <small>ERCR ENGENHARIA MECÂNICA · INSPEÇÕES REGISTRADAS</small>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-link" id="btn-logout">🚪 Sair</button>
+          <button class="primary" id="btn-new-inspection">+ Nova Inspeção</button>
         </div>
       </div>
-    </section>
-
-    <section class="sheet">
-      <div class="sheet-head"><span class="n">1</span><h2>Identificação do Veículo</h2></div>
-      <div class="sheet-body">
-        <div class="field-grid">
-          <div class="field"><label>1.1 Placa</label><input type="text" id="placa"></div>
-          <div class="field"><label>1.2 Marca/Fabricante</label><input type="text" id="marca"></div>
-          <div class="field"><label>1.3 Modelo</label><input type="text" id="modelo"></div>
-          <div class="field"><label>1.4 Ano de Fabricação</label><input type="text" id="anoFab"></div>
-          <div class="field"><label>1.5 Ano Modelo</label><input type="text" id="anoModelo"></div>
-          <div class="field"><label>1.6 Número do Chassi</label><input type="text" id="chassi"></div>
-          <div class="field"><label>1.7 RENAVAM</label><input type="text" id="renavam"></div>
-          <div class="field"><label>1.8 Número do Motor</label><input type="text" id="numMotor"></div>
-          <div class="field"><label>1.9 Hodômetro (km)</label><input type="text" id="hodometro"></div>
-          <div class="field"><label>1.10 Cor</label><input type="text" id="cor"></div>
-          <div class="field"><label>1.11 Tipo de Combustível</label><input type="text" id="combustivel"></div>
-          <div class="field"><label>1.12 Implemento/Carroceria (quando aplicável)</label><input type="text" id="implemento"></div>
-        </div>
-      </div>
-    </section>
-
-    <div id="sections-container"></div>
-
-    <section class="sheet">
-      <div class="sheet-head"><span class="n">14</span><h2>Registro de Não Conformidades</h2></div>
-      <div class="sheet-body" id="nc-container"></div>
-    </section>
-
-    <section class="sheet">
-      <div class="sheet-head"><span class="n">15</span><h2>Conclusão da Inspeção</h2></div>
-      <div class="sheet-body">
-        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--steel);margin-bottom:6px;">Classificação Final</label>
-        <div class="class-opts" id="class-opts">
-          <label class="class-opt" data-val="apto"><input type="radio" name="classificacao" value="apto"> APTO PARA OPERAÇÃO</label>
-          <label class="class-opt" data-val="restricoes"><input type="radio" name="classificacao" value="restricoes"> APTO PARA OPERAÇÃO COM RESTRIÇÕES</label>
-          <label class="class-opt" data-val="inapto"><input type="radio" name="classificacao" value="inapto"> INAPTO PARA OPERAÇÃO</label>
-        </div>
-        <div class="field" style="margin-top:16px;"><label>Considerações Técnicas</label><textarea id="consideracoes" rows="4"></textarea></div>
-        <div class="field-grid" style="margin-top:16px;">
-          <div class="field" style="grid-column:1/-1"><label style="color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0;font-weight:700;">Responsável pela Inspeção</label></div>
-          <div class="field"><label>Nome</label><input type="text" id="respInsNome"></div>
-          <div class="field"><label>CREA</label><input type="text" id="respInsCrea"></div>
-          <div class="field" style="grid-column:1/-1">
-            <label>Assinatura</label>
-            <div class="sig-pad-wrap">
-              <canvas id="sig-respIns" class="sig-pad" width="700" height="150"></canvas>
-              <button type="button" class="btn-link sig-clear" data-target="sig-respIns">Limpar Assinatura</button>
-            </div>
-            <input type="text" id="respInsAssinatura" placeholder="ou digite o nome, se preferir não assinar em tela" style="margin-top:6px;">
-          </div>
-          <div class="field"><label>Data</label><input type="date" id="respInsData"></div>
-        </div>
-        <div class="field-grid" style="margin-top:16px;">
-          <div class="field" style="grid-column:1/-1"><label style="color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0;font-weight:700;">Representante do Cliente</label></div>
-          <div class="field"><label>Nome</label><input type="text" id="repCliNome"></div>
-          <div class="field"><label>Cargo</label><input type="text" id="repCliCargo"></div>
-          <div class="field" style="grid-column:1/-1">
-            <label>Assinatura</label>
-            <div class="sig-pad-wrap">
-              <canvas id="sig-repCli" class="sig-pad" width="700" height="150"></canvas>
-              <button type="button" class="btn-link sig-clear" data-target="sig-repCli">Limpar Assinatura</button>
-            </div>
-            <input type="text" id="repCliAssinatura" placeholder="ou digite o nome, se preferir não assinar em tela" style="margin-top:6px;">
-          </div>
-          <div class="field"><label>Data</label><input type="date" id="repCliData"></div>
-        </div>
-        <p class="footnote">A assinatura em tela é salva junto da inspeção e aparece no PDF gerado.</p>
-      </div>
-    </section>
-
-    <section class="sheet">
-      <div class="sheet-head"><span class="n">$</span><h2>Nota Fiscal e Recibo (opcional)</h2></div>
-      <div class="sheet-body">
-        <p class="footnote" style="text-align:left;padding:0 0 10px;">Preencha apenas se for aplicável. Estes campos não geram nota fiscal — servem para referenciar a NF emitida no seu sistema fiscal e, se quiser, emitir um recibo simples (não fiscal) para o cliente.</p>
-        <div class="field-grid">
-          <div class="field"><label>Nº da Nota Fiscal (emitida à parte)</label><input type="text" id="nfNumero" placeholder="ex: 1245"></div>
-          <div class="field"><label>Link/Referência da NF</label><input type="text" id="nfLink" placeholder="ex: link do PDF da NF"></div>
-          <div class="field"><label>Valor do Serviço</label><input type="text" id="valorServico" placeholder="ex: R$ 350,00"></div>
-          <div class="field"><label>Forma de Pagamento</label><input type="text" id="formaPagamento" placeholder="ex: Pix, dinheiro, cartão..."></div>
-          <div class="field" style="grid-column:1/-1"><label>Pagador (nome e CPF/CNPJ)</label><input type="text" id="recPagador" placeholder="deixe em branco para usar o Responsável pelo Veículo"></div>
-        </div>
-      </div>
-    </section>
-
-    <div class="brand-footer">ERCR ENGENHARIA MECÂNICA · WWW.ERCRENGENHARIA.COM.BR</div>
-  </main>
-
-  <div class="actions">
-    <button class="secondary" id="btn-clear">Limpar Campos</button>
-    <button class="danger" id="btn-delete" style="display:none">Excluir Inspeção</button>
-    <button class="secondary" id="btn-save">Salvar</button>
-    <button class="secondary" id="btn-receipt">Gerar Recibo</button>
-    <button class="primary" id="btn-pdf">Gerar PDF</button>
+    </header>
+    <main class="list-main">
+      <div id="inspection-list"></div>
+    </main>
   </div>
-</div>
 
-<div id="print-report"></div>
-
-<script>
-const LOGO_B64 = "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";
-const ERCR_CNPJ = "55.141.422/0001-79";
-
-// ---------- Firebase ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyBD1jDTCBbDC4iV9p-tGIXSt69d52t4aIw",
-  authDomain: "ercr-engenharia-checklist.firebaseapp.com",
-  projectId: "ercr-engenharia-checklist",
-  storageBucket: "ercr-engenharia-checklist.firebasestorage.app",
-  messagingSenderId: "333973981305",
-  appId: "1:333973981305:web:6bc856e4b0fb2621f6aca8",
-  measurementId: "G-8M134SKP6H"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
-
-const SECTIONS = [
-  {n:2, title:"Condições Gerais e Estruturais", items:[
-    "Estado geral da carroceria","Estado geral da cabine","Estado do interior da cabine",
-    "Portas e fechaduras","Bancos e fixações","Fixações aparentes da cabine",
-    "Estado do baú, caçamba ou implemento","Plataforma ou implemento devidamente fixado ao chassi",
-    "Presença de corrosão aparente","Presença de trincas aparentes",
-    "Presença de deformações estruturais","Rachaduras ou suportes soltos aparentes"
-  ]},
-  {n:3, title:"Motor e Sistema de Arrefecimento", items:[
-    "Nível do óleo lubrificante","Estado do óleo lubrificante","Presença de borra ou contaminação no óleo",
-    "Nível do líquido de arrefecimento","Condição do líquido de arrefecimento","Funcionamento do sistema de arrefecimento",
-    "Estado das mangueiras do sistema de arrefecimento","Estado das conexões do sistema de arrefecimento",
-    "Estado da tampa do reservatório","Vazamentos aparentes de óleo lubrificante",
-    "Vazamentos aparentes de líquido de arrefecimento","Vazamentos aparentes de combustível",
-    "Vazamentos aparentes de fluido hidráulico","Ruídos anormais em funcionamento","Partida a frio",
-    "Partida a quente","Fumaça anormal no escapamento","Estado visual do compartimento do motor",
-    "Estado do sistema de escapamento","Fixações aparentes dos componentes"
-  ]},
-  {n:4, title:"Transmissão", items:[
-    "Engates normais em todas as marchas","Vazamentos aparentes na transmissão",
-    "Condição do fluido de transmissão","Trancos anormais durante operação","Folgas aparentes na transmissão"
-  ]},
-  {n:5, title:"Sistema de Direção", items:[
-    "Folgas aparentes","Estado dos terminais de direção","Estado das barras de direção",
-    "Estado da caixa de direção","Vazamentos aparentes","Funcionamento geral do sistema",
-    "Alinhamento visual das rodas","Batidas ou ruídos durante esterçamento"
-  ]},
-  {n:6, title:"Sistema de Suspensão", items:[
-    "Estado das molas","Estado dos amortecedores","Vazamentos nos amortecedores","Estado das buchas",
-    "Estado dos suportes","Estado das bandejas (quando aplicável)","Estado dos batentes",
-    "Componentes com desgaste excessivo","Ruídos anormais provenientes da suspensão"
-  ]},
-  {n:7, title:"Sistema de Freios", items:[
-    "Estado geral do sistema de freios","Estado das lonas de freio","Estado das pastilhas de freio",
-    "Estado dos discos de freio","Estado dos tambores de freio","Desgaste irregular dos componentes",
-    "Mangueiras e conexões","Tubulações do sistema","Vazamentos aparentes",
-    "Funcionamento do freio de serviço","Funcionamento do freio de estacionamento",
-    "Pressão e resposta do sistema pneumático (quando aplicável)"
-  ]},
-  {n:8, title:"Rodas e Pneus", items:[
-    "Estado geral dos pneus dianteiros","Estado geral dos pneus traseiros","Profundidade dos sulcos",
-    "Desgaste irregular","Cortes, rachaduras ou avarias","Estado das rodas","Fixação das rodas",
-    "Uniformidade de desgaste dos pneus"
-  ]},
-  {n:9, title:"Sistema Elétrico, Iluminação e Sinalização", items:[
-    "Estado geral da bateria","Nível de carga da bateria","Fixação da bateria","Estado dos cabos",
-    "Estado dos terminais","Presença de oxidação","Funcionamento do alternador","Funcionamento dos fusíveis",
-    "Funcionamento dos relés","Faróis baixos","Faróis altos","Lanternas traseiras","Luzes de freio",
-    "Indicadores de direção (setas)","Pisca-alerta","Luz de ré","Luz de placa","Iluminação do painel",
-    "Instrumentos do painel","Presença de luzes de anomalia","Buzina","Sirene de ré (quando aplicável)",
-    "Sinalização refletiva obrigatória"
-  ]},
-  {n:10, title:"Vidros e Acessórios", items:[
-    "Para-brisa","Vidros laterais","Vidro traseiro","Retrovisores externos","Retrovisor interno",
-    "Limpadores de para-brisa","Lavadores de para-brisa"
-  ]},
-  {n:11, title:"Equipamentos e Dispositivos de Segurança", items:[
-    "Cintos de segurança do motorista","Cintos de segurança dos passageiros","Triângulo de sinalização",
-    "Macaco","Chave de roda","Kit de ferramentas","Estepe","Extintor de incêndio (quando aplicável)",
-    "Dispositivos obrigatórios de segurança","Faixas refletivas obrigatórias"
-  ]},
-  {n:12, title:"Componentes Relacionados à Segurança Operacional", items:[
-    "Integridade estrutural aparente dos componentes de segurança",
-    "Ausência de interferências que comprometam a operação","Integridade das proteções visíveis",
-    "Integridade das fixações visíveis","Condições gerais para operação segura",
-    "Integridade aparente das fixações do implemento ou acessórios (quando aplicável)"
-  ]},
-  {n:13, title:"Avaliação Funcional", items:[
-    "Presença de ruídos anormais","Presença de vibrações excessivas","Falhas aparentes durante funcionamento",
-    "Condições anormais de operação","Comportamento geral do veículo durante avaliação funcional",
-    {text:"Teste funcional básico de deslocamento (quando realizado)", opts:[["realizado","Realizado"],["nao_realizado","Não Realizado"],["nao_aplicavel","Não Aplicável"]]}
-  ]}
-];
-const DEFAULT_OPTS = [["conforme","Conf."],["nao_conforme","N.Conf."],["na","N/A"]];
-
-const sectionsContainer = document.getElementById('sections-container');
-let allItemIds = [];
-
-SECTIONS.forEach(sec=>{
-  const sheet = document.createElement('section');
-  sheet.className='sheet';
-  const head = document.createElement('div');
-  head.className='sheet-head';
-  head.innerHTML = `<span class="n">${sec.n}</span><h2>${sec.title}</h2>`;
-  sheet.appendChild(head);
-  const body = document.createElement('div');
-  body.className='sheet-body';
-  sec.items.forEach((item,idx)=>{
-    const isObj = typeof item === 'object';
-    const text = isObj ? item.text : item;
-    const opts = isObj ? item.opts : DEFAULT_OPTS;
-    const itemId = `s${sec.n}-i${idx}`;
-    allItemIds.push(itemId);
-    const row = document.createElement('div');
-    row.className='item-row';
-    const numLabel = `${sec.n}.${idx+1}`;
-    row.innerHTML = `
-      <div class="item-text"><span class="item-num">${numLabel}</span>${text}</div>
-      <div class="opts" data-item="${itemId}">
-        ${opts.map(([val,label])=>{
-          const cls = val==='conforme'||val==='realizado' ? 'c' : (val==='nao_conforme'||val==='nao_realizado' ? 'nc' : 'na');
-          return `<label class="opt ${cls}" data-val="${val}"><input type="radio" name="${itemId}" value="${val}">${label}</label>`;
-        }).join('')}
-      </div>
-      <div class="photo-cell" data-photo-item="${itemId}">
-        <button type="button" class="photo-btn" title="Anexar foto">📷</button>
-        <input type="file" accept="image/*" capture="environment" style="display:none">
-        <div class="photo-thumb-wrap"></div>
-      </div>`;
-    body.appendChild(row);
-  });
-  sheet.appendChild(body);
-  sectionsContainer.appendChild(sheet);
-});
-
-sectionsContainer.addEventListener('click', (e)=>{
-  const opt = e.target.closest('.opt');
-  if(!opt) return;
-  const group = opt.closest('.opts');
-  group.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
-  opt.classList.add('sel');
-  opt.querySelector('input').checked = true;
-  updateGauges();
-});
-
-document.getElementById('class-opts').addEventListener('click', e=>{
-  const opt = e.target.closest('.class-opt');
-  if(!opt) return;
-  document.querySelectorAll('.class-opt').forEach(o=>o.classList.remove('sel-apto','sel-restr','sel-inapto'));
-  const val = opt.dataset.val;
-  opt.classList.add(val==='apto'?'sel-apto':val==='restricoes'?'sel-restr':'sel-inapto');
-  opt.querySelector('input').checked = true;
-});
-
-const ncContainer = document.getElementById('nc-container');
-for(let i=1;i<=3;i++){
-  const block = document.createElement('div');
-  block.className='nc-block';
-  block.innerHTML = `
-    <h3>NC-0${i}</h3>
-    <div class="field-grid">
-      <div class="field"><label>Item do Checklist</label><input type="text" id="nc${i}-item" placeholder="ex: 7.4"></div>
-      <div class="field"><label>Prazo</label><input type="date" id="nc${i}-prazo"></div>
-      <div class="field" style="grid-column:1/-1"><label>Descrição da Não Conformidade</label><textarea id="nc${i}-desc" rows="2"></textarea></div>
-      <div class="field">
-        <label>Foto</label>
-        <div class="photo-cell" data-photo-item="nc${i}">
-          <button type="button" class="photo-btn" title="Anexar foto">📷</button>
-          <input type="file" accept="image/*" capture="environment" style="display:none">
-          <div class="photo-thumb-wrap"></div>
+  <!-- Tela de Formulário (Checklist) -->
+  <div id="screen-form" class="screen" style="display:none">
+    <header class="dash">
+      <div class="dash-top">
+        <div class="dash-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR
+          <small id="rec-id-label">ERCR ENGENHARIA MECÂNICA · (21) 96414-6270</small>
+        </div>
+        <div class="gauges">
+          <div class="gauge ok"><div class="num" id="cnt-c">0</div><div class="lbl">Conforme</div></div>
+          <div class="gauge bad"><div class="num" id="cnt-nc">0</div><div class="lbl">N. Conf.</div></div>
+          <div class="gauge na"><div class="num" id="cnt-na">0</div><div class="lbl">N/A</div></div>
+          <div class="gauge pend"><div class="num" id="cnt-pend">0</div><div class="lbl">Pendente</div></div>
         </div>
       </div>
-      <div class="field">
-        <label>Criticidade</label>
-        <div class="crit-opts" data-nc="${i}">
-          <label class="crit low" data-val="baixa"><input type="radio" name="nc${i}-crit" value="baixa">Baixa</label>
-          <label class="crit med" data-val="media"><input type="radio" name="nc${i}-crit" value="media">Média</label>
-          <label class="crit high" data-val="alta"><input type="radio" name="nc${i}-crit" value="alta">Alta</label>
-        </div>
+      <div class="progress-track" id="progress-track"></div>
+      <div class="dash-controls">
+        <button class="btn-link" id="btn-back-list">← Voltar à Lista</button>
+        <label style="font-size:11px;color:var(--muted);">Status:
+          <select id="status-select">
+            <option value="rascunho">Rascunho</option>
+            <option value="pendente_revisao">Pendente de Revisão</option>
+            <option value="revisado">Revisado / Aprovado</option>
+          </select>
+        </label>
+        <span class="rec-id" id="emission-log"></span>
       </div>
-      <div class="field" style="grid-column:1/-1"><label>Recomendação Técnica</label><textarea id="nc${i}-rec" rows="2"></textarea></div>
-    </div>`;
-  ncContainer.appendChild(block);
-}
-function wirePhotoContainer(container){
-  container.addEventListener('click', e=>{
-    const btn = e.target.closest('.photo-btn');
-    if(btn){
-      const cell = btn.closest('.photo-cell');
-      cell.querySelector('input[type=file]').click();
-      return;
-    }
-    const rem = e.target.closest('.photo-remove');
-    if(rem){
-      const cell = rem.closest('.photo-cell');
-      if(confirm('Remover esta foto?')) removePhoto(cell.dataset.photoItem);
-    }
-  });
-  container.addEventListener('change', e=>{
-    const input = e.target.closest('input[type=file]');
-    if(!input) return;
-    const cell = input.closest('.photo-cell');
-    const file = input.files[0];
-    if(file) attachPhoto(cell.dataset.photoItem, file);
-    input.value = '';
-  });
-}
-wirePhotoContainer(sectionsContainer);
-wirePhotoContainer(ncContainer);
+    </header>
 
-ncContainer.addEventListener('click', e=>{
-  const opt = e.target.closest('.crit');
-  if(!opt) return;
-  const group = opt.closest('.crit-opts');
-  group.querySelectorAll('.crit').forEach(o=>o.classList.remove('sel'));
-  opt.classList.add('sel');
-  opt.querySelector('input').checked = true;
-});
+    <main>
+      <!-- Seção 0: Identificação da Inspeção -->
+      <section class="sheet">
+        <div class="sheet-head"><span class="n">·</span><h2>Identificação da Inspeção</h2><span class="seq-badge" id="seq-badge" style="display:none;"></span></div>
+        <div class="sheet-body">
+          <div class="field-grid">
+            <div class="field" style="grid-column:1/-1"><label>Empresa Responsável</label><input type="text" id="empresa"></div>
+            <div class="field"><label>CNPJ</label><input type="text" id="cnpj"></div>
+            <div class="field"><label>Data da Inspeção</label><input type="date" id="dataInsp"></div>
+            <div class="field"><label>Horário</label><input type="time" id="horario"></div>
+            <div class="field"><label>Município/UF</label><input type="text" id="municipio"></div>
+            <div class="field" style="grid-column:1/-1"><label>Local da Inspeção</label><input type="text" id="local"></div>
+            <div class="field"><label>Responsável pelo Veículo</label><input type="text" id="respVeic"></div>
+            <div class="field"><label>Cargo/Função</label><input type="text" id="cargoFunc"></div>
+            <div class="field"><label>Telefone</label><input type="text" id="telefone" placeholder="(  ) _____-____"></div>
+          </div>
+        </div>
+      </section>
 
-// ---------- Photos ----------
-function compressImage(file, maxWidth=900, quality=0.6){
-  return new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      const img = new Image();
-      img.onload = ()=>{
-        let w = img.width, h = img.height;
-        if(w>maxWidth){ h = Math.round(h*(maxWidth/w)); w = maxWidth; }
-        const canvas = document.createElement('canvas');
-        canvas.width=w; canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+      <!-- Seção 1: Identificação do Veículo -->
+      <section class="sheet">
+        <div class="sheet-head"><span class="n">1</span><h2>Identificação do Veículo</h2></div>
+        <div class="sheet-body">
+          <div class="field-grid">
+            <div class="field"><label>1.1 Placa</label><input type="text" id="placa"></div>
+            <div class="field"><label>1.2 Marca/Fabricante</label><input type="text" id="marca"></div>
+            <div class="field"><label>1.3 Modelo</label><input type="text" id="modelo"></div>
+            <div class="field"><label>1.4 Ano de Fabricação</label><input type="text" id="anoFab"></div>
+            <div class="field"><label>1.5 Ano Modelo</label><input type="text" id="anoModelo"></div>
+            <div class="field"><label>1.6 Número do Chassi</label><input type="text" id="chassi"></div>
+            <div class="field"><label>1.7 RENAVAM</label><input type="text" id="renavam"></div>
+            <div class="field"><label>1.8 Número do Motor</label><input type="text" id="numMotor"></div>
+            <div class="field"><label>1.9 Hodômetro (km)</label><input type="text" id="hodometro"></div>
+            <div class="field"><label>1.10 Cor</label><input type="text" id="cor"></div>
+            <div class="field"><label>1.11 Tipo de Combustível</label><input type="text" id="combustivel"></div>
+            <div class="field"><label>1.12 Implemento/Carroceria</label><input type="text" id="implemento"></div>
+          </div>
+        </div>
+      </section>
 
-function photoStoragePath(itemId){ return `inspections/${currentRecordId}/photos/${itemId}.jpg`; }
+      <!-- Contêiner Dinâmico para as seções 2 a 13 do Checklist -->
+      <div id="sections-container"></div>
 
-function renderThumb(itemId, url){
-  const wrap = document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb-wrap`);
-  const btn = document.querySelector(`[data-photo-item="${itemId}"] .photo-btn`);
-  if(!wrap) return;
-  if(url){
-    wrap.innerHTML = `<div class="photo-thumb"><img src="${url}"><button type="button" class="photo-remove" title="Remover">×</button></div>`;
-    if(btn) btn.style.display = 'none';
-  } else {
-    wrap.innerHTML = '';
-    if(btn) btn.style.display = '';
-  }
-}
+      <!-- Seção 14: Registro de Não Conformidades -->
+      <section class="sheet">
+        <div class="sheet-head"><span class="n">14</span><h2>Registro de Não Conformidades</h2></div>
+        <div class="sheet-body" id="nc-container">
+          <!-- Gerado via script estático abaixo para facilitar -->
+        </div>
+      </section>
 
-function clearAllThumbs(){
-  ALL_PHOTO_IDS.forEach(id=>renderThumb(id, null));
-  photoUrls = {};
-}
+      <!-- Seção 15: Conclusão da Inspeção -->
+      <section class="sheet">
+        <div class="sheet-head"><span class="n">15</span><h2>Conclusão da Inspeção</h2></div>
+        <div class="sheet-body">
+          <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--steel);margin-bottom:6px;">Classificação Final</label>
+          <div class="class-opts" id="class-opts">
+            <label class="class-opt" data-val="apto"><input type="radio" name="classificacao" value="apto"> APTO PARA OPERAÇÃO</label>
+            <label class="class-opt" data-val="restricoes"><input type="radio" name="classificacao" value="restricoes"> APTO PARA OPERAÇÃO COM RESTRIÇÕES</label>
+            <label class="class-opt" data-val="inapto"><input type="radio" name="classificacao" value="inapto"> INAPTO PARA OPERAÇÃO</label>
+          </div>
+          <div class="field" style="margin-top:16px;">
+            <label>Considerações Técnicas</label>
+            <textarea id="consideracoes" rows="4"></textarea>
+          </div>
 
-async function ensureRecordId(){
-  if(!currentRecordId){
-    const ok = await saveRecord();
-    if(!ok) return null;
-  }
-  return currentRecordId;
-}
+          <!-- SELETOR GERAL DE ASSINATURA -->
+          <div class="field" style="grid-column:1/-1; margin-top: 24px; padding: 12px; background: #FAFAFA; border: 1px solid #E0E0E0; border-radius: 4px;">
+            <label style="color:var(--ink);font-size:13px;font-weight:700;">Método de Assinatura do Relatório</label>
+            <div class="sig-options" style="display:flex; gap:15px; margin-top: 8px;">
+              <label><input type="radio" name="sigMethod" value="canvas" checked> Desenhar na Tela</label>
+              <label><input type="radio" name="sigMethod" value="icp"> Certificado Digital</label>
+              <label><input type="radio" name="sigMethod" value="remote"> Link Remoto (WhatsApp/E-mail)</label>
+            </div>
+          </div>
 
-async function attachPhoto(itemId, file){
-  if(!(await ensureRecordId())) return;
-  try{
-    const dataUrl = await compressImage(file);
-    const ref = storage.ref(photoStoragePath(itemId));
-    await ref.putString(dataUrl, 'data_url');
-    const url = await ref.getDownloadURL();
-    photoUrls[itemId] = url;
-    renderThumb(itemId, url);
-    await saveRecord();
-  }catch(err){
-    console.error(err);
-    alert('Não foi possível anexar a foto. Tente uma imagem menor ou verifique sua conexão.');
-  }
-}
+          <!-- BLOCO: RESPONSÁVEL PELA INSPEÇÃO -->
+          <div class="field-grid" style="margin-top:16px; padding-bottom: 16px; border-bottom: 1px dashed var(--paper-line);">
+            <div class="field" style="grid-column:1/-1"><label style="color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0;font-weight:700;">Responsável pela Inspeção</label></div>
+            <div class="field"><label>Nome</label><input type="text" id="respInsNome"></div>
+            <div class="field"><label>CREA</label><input type="text" id="respInsCrea"></div>
+            
+            <div class="sig-dynamic-container sig-container-canvas field" style="grid-column:1/-1">
+              <label>Assinatura</label>
+              <div class="sig-pad-wrap">
+                <canvas id="sig-respIns" class="sig-pad" width="700" height="150"></canvas>
+                <button type="button" class="btn-link sig-clear" data-target="sig-respIns" data-role="respIns">Limpar Assinatura</button>
+              </div>
+              <input type="text" id="respInsAssinatura" placeholder="ou digite o nome, se preferir não assinar em tela" style="margin-top:6px;">
+            </div>
 
-async function removePhoto(itemId){
-  try{ await storage.ref(photoStoragePath(itemId)).delete(); }catch(err){ /* já pode não existir */ }
-  delete photoUrls[itemId];
-  renderThumb(itemId, null);
-  await saveRecord();
-}
+            <div class="sig-dynamic-container sig-container-icp field" style="grid-column:1/-1; display:none;">
+              <label>Assinatura Digital</label>
+              <button type="button" class="secondary" id="btn-sign-icp-respIns">Autenticar ICP-Brasil (Inspetor)</button>
+            </div>
 
-function loadPhotosForRecord(urls){
-  clearAllThumbs();
-  photoUrls = urls || {};
-  Object.entries(photoUrls).forEach(([itemId, url])=> renderThumb(itemId, url));
-}
+            <div class="sig-dynamic-container sig-container-remote field" style="grid-column:1/-1; display:none;">
+              <label>Contato Remoto do Inspetor</label>
+              <input type="text" id="remote-contact-respIns" placeholder="(  ) _____-____ ou e-mail">
+            </div>
 
-function updateGauges(){
-  let c=0,nc=0,na=0;
-  allItemIds.forEach(id=>{
-    const checked = document.querySelector(`input[name="${id}"]:checked`);
-    if(checked){
-      const v = checked.value;
-      if(v==='conforme'||v==='realizado') c++;
-      else if(v==='nao_conforme'||v==='nao_realizado') nc++;
-      else na++;
-    }
-  });
-  const total = allItemIds.length;
-  const pend = total - c - nc - na;
-  document.getElementById('cnt-c').textContent = c;
-  document.getElementById('cnt-nc').textContent = nc;
-  document.getElementById('cnt-na').textContent = na;
-  document.getElementById('cnt-pend').textContent = pend;
-  const track = document.getElementById('progress-track');
-  track.innerHTML = `
-    <div style="width:${c/total*100}%;background:#4C8C6B"></div>
-    <div style="width:${nc/total*100}%;background:#C1503F"></div>
-    <div style="width:${na/total*100}%;background:#6B7680"></div>
-  `;
-}
+            <div class="field"><label>Data</label><input type="date" id="respInsData"></div>
+          </div>
 
-const FORM_TEXT_IDS = ['empresa','cnpj','dataInsp','horario','municipio','local','respVeic','cargoFunc','telefone',
-  'placa','marca','modelo','anoFab','anoModelo','chassi','renavam','numMotor','hodometro','cor','combustivel','implemento',
-  'consideracoes','respInsNome','respInsCrea','respInsAssinatura','respInsData','repCliNome','repCliCargo','repCliAssinatura','repCliData',
-  'nfNumero','nfLink','valorServico','formaPagamento','recPagador'];
-for(let i=1;i<=3;i++){ FORM_TEXT_IDS.push(`nc${i}-item`,`nc${i}-prazo`,`nc${i}-desc`,`nc${i}-rec`); }
-const ALL_PHOTO_IDS = allItemIds.concat(['nc1','nc2','nc3']);
-let photoUrls = {}; // {itemId: downloadURL}
-let currentSeq = null; // {number, year}
-let emissionLog = []; // array of ISO timestamps, one per time the PDF was generated
+          <!-- BLOCO: REPRESENTANTE DO CLIENTE -->
+          <div class="field-grid" style="margin-top:16px;">
+            <div class="field" style="grid-column:1/-1"><label style="color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0;font-weight:700;">Representante do Cliente</label></div>
+            <div class="field"><label>Nome</label><input type="text" id="repCliNome"></div>
+            <div class="field"><label>Cargo</label><input type="text" id="repCliCargo"></div>
+            
+            <div class="sig-dynamic-container sig-container-canvas field" style="grid-column:1/-1">
+              <label>Assinatura</label>
+              <div class="sig-pad-wrap">
+                <canvas id="sig-repCli" class="sig-pad" width="700" height="150"></canvas>
+                <button type="button" class="btn-link sig-clear" data-target="sig-repCli" data-role="repCli">Limpar Assinatura</button>
+              </div>
+              <input type="text" id="repCliAssinatura" placeholder="ou digite o nome, se preferir não assinar em tela" style="margin-top:6px;">
+            </div>
 
-function formatSeq(seq){
-  if(!seq) return '';
-  return `Nº ${String(seq.number).padStart(4,'0')}/${seq.year}`;
-}
-function updateSeqBadge(){
-  const badge = document.getElementById('seq-badge');
-  if(currentSeq){
-    badge.textContent = formatSeq(currentSeq);
-    badge.style.display = '';
-  } else {
-    badge.style.display = 'none';
-  }
-}
-function fmtDateTime(iso){
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-}
-function updateEmissionLog(){
-  const el = document.getElementById('emission-log');
-  if(!emissionLog.length){ el.textContent = 'Ainda não emitido'; return; }
-  const first = emissionLog[0];
-  const revisions = emissionLog.length - 1;
-  el.textContent = revisions>0
-    ? `Emitido ${fmtDateTime(first)} · ${revisions} revisão(ões), última em ${fmtDateTime(emissionLog[emissionLog.length-1])}`
-    : `Emitido ${fmtDateTime(first)} · sem revisões`;
-}
-async function getNextSeqNumber(year){
-  const ref = db.collection('counters').doc('seq_'+year);
-  try{
-    return await db.runTransaction(async (tx)=>{
-      const snap = await tx.get(ref);
-      const current = snap.exists ? (snap.data().value || 0) : 0;
-      const next = current + 1;
-      tx.set(ref, {value: next});
-      return next;
-    });
-  }catch(err){
-    console.error('Falha ao gerar o número sequencial:', err);
-    throw new Error('Não foi possível gerar o número sequencial. Verifique sua conexão e as regras do Firestore.');
-  }
-}
+            <div class="sig-dynamic-container sig-container-icp field" style="grid-column:1/-1; display:none;">
+              <label>Assinatura Digital</label>
+              <button type="button" class="secondary" id="btn-sign-icp-repCli">Autenticar ICP-Brasil (Cliente)</button>
+            </div>
 
-// ---------- Signature pads ----------
-function setupSignaturePad(canvas){
-  const ctx = canvas.getContext('2d');
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#1a1a1a';
-  let drawing = false;
-  canvas._hasDrawn = false;
-  canvas._dirty = false;
+            <div class="sig-dynamic-container sig-container-remote field" style="grid-column:1/-1; display:none;">
+              <label>Contato Remoto do Cliente</label>
+              <input type="text" id="remote-contact-repCli" placeholder="(  ) _____-____ ou e-mail">
+            </div>
 
-  function pos(e){
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY};
-  }
-  canvas.addEventListener('pointerdown', e=>{
-    drawing = true; canvas._hasDrawn = true; canvas._dirty = true;
-    const p = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x,p.y);
-    canvas.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  });
-  canvas.addEventListener('pointermove', e=>{
-    if(!drawing) return;
-    const p = pos(e);
-    ctx.lineTo(p.x,p.y);
-    ctx.stroke();
-    e.preventDefault();
-  });
-  ['pointerup','pointerleave','pointercancel'].forEach(evt=>{
-    canvas.addEventListener(evt, ()=>{ drawing=false; });
-  });
-}
+            <div class="field"><label>Data</label><input type="date" id="repCliData"></div>
+          </div>
 
-function clearSignatureCanvas(canvas){
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  canvas._hasDrawn = false;
-  canvas._dirty = true;
-}
+        </div>
+      </section>
 
-function loadSignatureIntoCanvas(canvas, url){
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  canvas._hasDrawn = false;
-  canvas._dirty = false;
-  if(!url) return;
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = ()=>{
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    canvas._hasDrawn = true;
-  };
-  img.src = url;
-}
+      <!-- Nota Fiscal e Recibo -->
+      <section class="sheet">
+        <div class="sheet-head"><span class="n">$</span><h2>Nota Fiscal e Recibo (opcional)</h2></div>
+        <div class="sheet-body">
+          <p class="footnote" style="text-align:left;padding:0 0 10px;">Preencha apenas se for aplicável. Estes campos servem para referenciar a NF emitida no seu sistema fiscal ou emitir um recibo simples (não fiscal).</p>
+          <div class="field-grid">
+            <div class="field"><label>Nº da Nota Fiscal</label><input type="text" id="nfNumero" placeholder="ex: 1245"></div>
+            <div class="field"><label>Link/Referência da NF</label><input type="text" id="nfLink" placeholder="ex: link do PDF da NF"></div>
+            <div class="field"><label>Valor do Serviço</label><input type="text" id="valorServico" placeholder="ex: R$ 350,00"></div>
+            <div class="field"><label>Forma de Pagamento</label><input type="text" id="formaPagamento" placeholder="ex: Pix, dinheiro, cartão..."></div>
+            <div class="field" style="grid-column:1/-1"><label>Pagador (nome e CPF/CNPJ)</label><input type="text" id="recPagador" placeholder="deixe em branco para usar o Responsável pelo Veículo"></div>
+          </div>
+        </div>
+      </section>
 
-function signatureStoragePath(which){ return `inspections/${currentRecordId}/signatures/${which}.png`; }
+      <div class="brand-footer">ERCR ENGENHARIA MECÂNICA · WWW.ERCRENGENHARIA.COM.BR</div>
+    </main>
 
-async function syncSignatureToStorage(which, canvas){
-  if(!canvas._dirty) return;
-  if(!canvas._hasDrawn){
-    if(signatureUrls[which]){
-      try{ await storage.ref(signatureStoragePath(which)).delete(); }catch(err){ /* já pode não existir */ }
-    }
-    signatureUrls[which] = null;
-  } else {
-    const dataUrl = canvas.toDataURL('image/png');
-    const ref = storage.ref(signatureStoragePath(which));
-    await ref.putString(dataUrl, 'data_url');
-    signatureUrls[which] = await ref.getDownloadURL();
-  }
-  canvas._dirty = false;
-}
+    <!-- Rodapé de Ações -->
+    <div class="actions">
+      <button class="secondary" id="btn-clear">Limpar Campos</button>
+      <button class="danger" id="btn-delete" style="display:none">Excluir Inspeção</button>
+      <button class="secondary" id="btn-save">Salvar</button>
+      <button class="secondary" id="btn-receipt">Gerar Recibo</button>
+      <button class="primary" id="btn-pdf">Gerar PDF</button>
+    </div>
+  </div>
 
-let signatureUrls = { respIns: null, repCli: null };
-const sigRespIns = document.getElementById('sig-respIns');
-const sigRepCli = document.getElementById('sig-repCli');
-setupSignaturePad(sigRespIns);
-setupSignaturePad(sigRepCli);
-document.querySelectorAll('.sig-clear').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const canvas = document.getElementById(btn.dataset.target);
-    clearSignatureCanvas(canvas);
-  });
-});
+  <!-- Contêiner de Impressão (invisível em tela, exibido no Ctrl+P) -->
+  <div id="print-report"></div>
 
-function collectState(){
-  const state = {text:{}, radios:{}, status: document.getElementById('status-select').value, photoUrls: {...photoUrls}, seq: currentSeq, emissionLog: emissionLog,
-    signatures: {...signatureUrls}};
-  FORM_TEXT_IDS.forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) state.text[id] = el.value;
-  });
-  const radioNames = new Set();
-  document.querySelectorAll('input[type=radio]').forEach(r=>radioNames.add(r.name));
-  radioNames.forEach(name=>{
-    const checked = document.querySelector(`input[name="${name}"]:checked`);
-    if(checked) state.radios[name] = checked.value;
-  });
-  return state;
-}
-
-function clearFormUI(){
-  document.querySelectorAll('input[type=text],input[type=date],input[type=time],textarea').forEach(el=>el.value='');
-  document.querySelectorAll('input[type=radio]').forEach(el=>el.checked=false);
-  document.querySelectorAll('.opt,.crit,.class-opt').forEach(el=>el.classList.remove('sel','sel-apto','sel-restr','sel-inapto'));
-  document.getElementById('status-select').value = 'rascunho';
-  clearAllThumbs();
-  clearSignatureCanvas(sigRespIns);
-  clearSignatureCanvas(sigRepCli);
-  signatureUrls = { respIns: null, repCli: null };
-  currentSeq = null;
-  emissionLog = [];
-  updateSeqBadge();
-  updateEmissionLog();
-  updateGauges();
-}
-
-function applyState(state){
-  clearFormUI();
-  if(!state) return;
-  Object.entries(state.text||{}).forEach(([id,val])=>{
-    const el = document.getElementById(id);
-    if(el) el.value = val;
-  });
-  Object.entries(state.radios||{}).forEach(([name,val])=>{
-    const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
-    if(input){
-      input.checked = true;
-      const label = input.closest('label');
-      if(label){
-        if(label.classList.contains('opt')){
-          label.closest('.opts').querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
-          label.classList.add('sel');
-        } else if(label.classList.contains('crit')){
-          label.closest('.crit-opts').querySelectorAll('.crit').forEach(o=>o.classList.remove('sel'));
-          label.classList.add('sel');
-        } else if(label.classList.contains('class-opt')){
-          document.querySelectorAll('.class-opt').forEach(o=>o.classList.remove('sel-apto','sel-restr','sel-inapto'));
-          const v = label.dataset.val;
-          label.classList.add(v==='apto'?'sel-apto':v==='restricoes'?'sel-restr':'sel-inapto');
-        }
+  <!-- Gerador estático HTML das NCs para manter compatibilidade com o formato original -->
+  <script>
+    const ncContainer = document.getElementById('nc-container');
+    if (ncContainer) {
+      for (let i = 1; i <= 3; i++) {
+        ncContainer.innerHTML += `
+          <div class="nc-block">
+            <h3>NC-0${i}</h3>
+            <div class="field-grid">
+              <div class="field"><label>Item do Checklist</label><input type="text" id="nc${i}-item" placeholder="ex: 7.4"></div>
+              <div class="field"><label>Prazo</label><input type="date" id="nc${i}-prazo"></div>
+              <div class="field" style="grid-column:1/-1"><label>Descrição da Não Conformidade</label><textarea id="nc${i}-desc" rows="2"></textarea></div>
+              <div class="field">
+                <label>Foto</label>
+                <div class="photo-cell" data-photo-item="nc${i}">
+                  <button type="button" class="photo-btn" title="Anexar foto">📷</button>
+                  <input type="file" accept="image/*" capture="environment" style="display:none">
+                  <div class="photo-thumb-wrap"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Criticidade</label>
+                <div class="crit-opts" data-nc="${i}">
+                  <label class="crit low" data-val="baixa"><input type="radio" name="nc${i}-crit" value="baixa">Baixa</label>
+                  <label class="crit med" data-val="media"><input type="radio" name="nc${i}-crit" value="media">Média</label>
+                  <label class="crit high" data-val="alta"><input type="radio" name="nc${i}-crit" value="alta">Alta</label>
+                </div>
+              </div>
+              <div class="field" style="grid-column:1/-1"><label>Recomendação Técnica</label><textarea id="nc${i}-rec" rows="2"></textarea></div>
+            </div>
+          </div>
+        `;
       }
     }
-  });
-  if(state.status) document.getElementById('status-select').value = state.status;
-  currentSeq = state.seq || null;
-  emissionLog = state.emissionLog || [];
-  if(state.signatures){
-    signatureUrls = { respIns: state.signatures.respIns || null, repCli: state.signatures.repCli || null };
-    loadSignatureIntoCanvas(sigRespIns, signatureUrls.respIns);
-    loadSignatureIntoCanvas(sigRepCli, signatureUrls.repCli);
-  } else {
-    signatureUrls = { respIns: null, repCli: null };
-  }
-  updateSeqBadge();
-  updateEmissionLog();
-  updateGauges();
-}
+  </script>
 
-// ---------- Navigation between screens ----------
-const screenList = document.getElementById('screen-list');
-const screenForm = document.getElementById('screen-form');
-let currentRecordId = null;
+  <!-- Importação dos Scripts Modulares -->
+  <script src="js/config/firebase.js"></script>
+  <script src="js/data/sections.js"></script>
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/auth.js"></script>
+  
+  <!-- Assinaturas e Padrão Strategy -->
+  <script src="js/services/signatures/signature-manager.js"></script>
+  <script src="js/services/signatures/canvas-provider.js"></script>
+  <script src="js/services/signatures/icp-provider.js"></script>
+  <script src="js/services/signatures/api-provider.js"></script>
+  
+  <script src="js/ui/render.js"></script>
+  <script src="js/app.js"></script>
 
-function showList(){
-  screenForm.style.display = 'none';
-  screenList.style.display = '';
-  loadList();
-}
-function showForm(){
-  screenList.style.display = 'none';
-  screenForm.style.display = '';
-}
-
-document.getElementById('btn-new-inspection').addEventListener('click', ()=>{
-  currentRecordId = null;
-  clearFormUI();
-  document.getElementById('rec-id-label').textContent = 'NOVA INSPEÇÃO · AINDA NÃO SALVA';
-  document.getElementById('btn-delete').style.display = 'none';
-  showForm();
-});
-document.getElementById('btn-back-list').addEventListener('click', showList);
-
-// ---------- Storage (Firestore, shared so contractor and reviewer see the same records) ----------
-async function saveRecord(){
-  try{
-    if(!currentRecordId){
-      currentRecordId = db.collection('inspections').doc().id;
-    }
-    await syncSignatureToStorage('respIns', sigRespIns);
-    await syncSignatureToStorage('repCli', sigRepCli);
-    const state = collectState();
-    state.updatedAt = new Date().toISOString();
-    await db.collection('inspections').doc(currentRecordId).set(state, {merge:true});
-    document.getElementById('rec-id-label').textContent = `ID ${currentRecordId} · SALVO`;
-    return true;
-  }catch(err){
-    console.error(err);
-    alert('Não foi possível salvar. Verifique sua conexão e as regras do Firebase.');
-    return false;
-  }
-}
-
-async function loadRecord(id){
-  try{
-    const doc = await db.collection('inspections').doc(id).get();
-    if(doc.exists){
-      currentRecordId = id;
-      const state = doc.data();
-      applyState(state);
-      loadPhotosForRecord(state.photoUrls);
-      document.getElementById('rec-id-label').textContent = `ID ${id}`;
-      document.getElementById('btn-delete').style.display = '';
-      showForm();
-    }
-  }catch(err){
-    console.error(err);
-    alert('Não foi possível carregar esta inspeção.');
-  }
-}
-
-async function deleteRecord(id){
-  try{
-    const doc = await db.collection('inspections').doc(id).get();
-    const state = doc.exists ? doc.data() : null;
-    const urls = state && state.photoUrls ? state.photoUrls : {};
-    for(const itemId of Object.keys(urls)){
-      try{ await storage.ref(`inspections/${id}/photos/${itemId}.jpg`).delete(); }catch(e){}
-    }
-    if(state && state.signatures){
-      for(const which of ['respIns','repCli']){
-        if(state.signatures[which]){
-          try{ await storage.ref(`inspections/${id}/signatures/${which}.png`).delete(); }catch(e){}
-        }
-      }
-    }
-    await db.collection('inspections').doc(id).delete();
-  }catch(err){ console.error(err); }
-}
-
-const STATUS_LABEL = {rascunho:'Rascunho', pendente_revisao:'Pendente de Revisão', revisado:'Revisado / Aprovado'};
-
-async function loadList(){
-  const container = document.getElementById('inspection-list');
-  container.innerHTML = '<div class="list-loading">Carregando inspeções…</div>';
-  try{
-    const snap = await db.collection('inspections').orderBy('updatedAt','desc').get();
-    if(snap.empty){
-      container.innerHTML = '<div class="list-empty">Nenhuma inspeção cadastrada ainda.<br>Toque em "+ Nova Inspeção" para começar.</div>';
-      return;
-    }
-    container.innerHTML = snap.docs.map(doc=>{
-      const rec = doc.data();
-      const empresa = rec.text?.empresa || '(sem empresa)';
-      const placa = rec.text?.placa || '(sem placa)';
-      const dataInsp = rec.text?.dataInsp || '';
-      const dataFmt = dataInsp ? dataInsp.split('-').reverse().join('/') : '—';
-      const seqLabel = rec.seq ? `${formatSeq(rec.seq)} · ` : '';
-      const status = rec.status || 'rascunho';
-      return `<div class="card" data-id="${doc.id}">
-        <div class="info">
-          <div class="placa">${placa}</div>
-          <div class="meta">${seqLabel}${empresa} · ${dataFmt}</div>
-        </div>
-        <div class="badge ${status}">${STATUS_LABEL[status]||status}</div>
-      </div>`;
-    }).join('');
-    container.querySelectorAll('.card').forEach(card=>{
-      card.addEventListener('click', ()=> loadRecord(card.dataset.id));
-    });
-  }catch(err){
-    console.error(err);
-    container.innerHTML = '<div class="list-empty">Não foi possível carregar as inspeções. Verifique sua conexão e as regras do Firestore.</div>';
-  }
-}
-
-document.getElementById('btn-save').addEventListener('click', async ()=>{
-  const ok = await saveRecord();
-  if(ok){
-    const label = document.getElementById('rec-id-label');
-    const original = label.textContent;
-    label.textContent = 'SALVO ✓';
-    setTimeout(()=>{ label.textContent = original; }, 1500);
-  }
-});
-
-document.getElementById('btn-clear').addEventListener('click', ()=>{
-  if(confirm('Limpar todos os campos preenchidos nesta tela? (isto não afeta o que já foi salvo)')){
-    clearFormUI();
-  }
-});
-
-document.getElementById('btn-delete').addEventListener('click', async ()=>{
-  if(currentRecordId && confirm('Excluir esta inspeção definitivamente? Esta ação não pode ser desfeita.')){
-    await deleteRecord(currentRecordId);
-    showList();
-  }
-});
-
-// ---------- Faithful print report (matches the original PDF layout) ----------
-function fmtDateBR(iso){
-  if(!iso) return '';
-  const parts = iso.split('-');
-  if(parts.length!==3) return iso;
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
-
-function buildPrintReport(){
-  const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-  const radioVal = name => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; };
-  const photoSrc = itemId => { const img = document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb img`); return img ? img.src : null; };
-  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  let html = '<div class="pr-page">';
-  html += `<div style="position:relative;">
-    <div class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</div>
-    ${currentSeq ? `<div class="pr-seq">${formatSeq(currentSeq)}</div>` : ''}
-  </div>`;
-
-  html += `<div class="pr-section-title">IDENTIFICAÇÃO DA INSPEÇÃO</div>`;
-  html += `<div class="pr-field-line">Empresa Responsável: <b>${esc(v('empresa'))}</b></div>`;
-  html += `<div class="pr-field-pair">
-    <div>CNPJ: <b>${esc(v('cnpj'))}</b></div>
-    <div>Data da Inspeção: <b>${esc(fmtDateBR(v('dataInsp')))}</b></div>
-    <div>Horário: <b>${esc(v('horario'))}</b></div>
-  </div>`;
-  html += `<div class="pr-field-line">Local da Inspeção: <b>${esc(v('local'))}</b></div>`;
-  html += `<div class="pr-field-line">Município/UF: <b>${esc(v('municipio'))}</b></div>`;
-  html += `<div class="pr-field-pair">
-    <div>Responsável pelo Veículo: <b>${esc(v('respVeic'))}</b></div>
-    <div>Cargo/Função: <b>${esc(v('cargoFunc'))}</b></div>
-  </div>`;
-  html += `<div class="pr-field-line">Telefone: <b>${esc(v('telefone'))}</b></div>`;
-
-  html += `<div class="pr-section-title">1. IDENTIFICAÇÃO DO VEÍCULO</div>`;
-  [
-    ['1.1 Placa', v('placa'), '1.2 Marca/Fabricante', v('marca')],
-    ['1.3 Modelo', v('modelo'), '1.4 Ano de Fabricação', v('anoFab')],
-    ['1.5 Ano Modelo', v('anoModelo'), '1.6 Número do Chassi', v('chassi')],
-    ['1.7 RENAVAM', v('renavam'), '1.8 Número do Motor', v('numMotor')],
-    ['1.9 Hodômetro (km)', v('hodometro'), '1.10 Cor', v('cor')],
-  ].forEach(([l1,val1,l2,val2])=>{
-    html += `<div class="pr-field-pair"><div>${l1}: <b>${esc(val1)}</b></div><div>${l2}: <b>${esc(val2)}</b></div></div>`;
-  });
-  html += `<div class="pr-field-line">1.11 Tipo de Combustível: <b>${esc(v('combustivel'))}</b></div>`;
-  html += `<div class="pr-field-line">1.12 Implemento/Carroceria (quando aplicável): <b>${esc(v('implemento'))}</b></div>`;
-
-  SECTIONS.forEach(sec=>{
-    html += `<div class="pr-section-title">${sec.n}. ${esc(sec.title.toUpperCase())}</div>`;
-    html += `<table class="pr-table"><thead><tr><th>Item</th><th>Conforme</th><th>Não Conforme</th><th>N/A</th></tr></thead><tbody>`;
-    sec.items.forEach((item,idx)=>{
-      if(typeof item === 'object') return;
-      const itemId = `s${sec.n}-i${idx}`;
-      const val = radioVal(itemId);
-      const photo = photoSrc(itemId);
-      html += `<tr class="pr-row">
-        <td class="pr-item-cell">${sec.n}.${idx+1} ${esc(item)}${photo?`<img class="pr-photo-thumb" src="${photo}">`:''}</td>
-        <td class="pr-circle-cell"><span class="pr-circle ${val==='conforme'?'filled':''}"></span></td>
-        <td class="pr-circle-cell"><span class="pr-circle ${val==='nao_conforme'?'filled':''}"></span></td>
-        <td class="pr-circle-cell"><span class="pr-circle ${val==='na'?'filled':''}"></span></td>
-      </tr>`;
-    });
-    html += `</tbody></table>`;
-    sec.items.forEach((item,idx)=>{
-      if(typeof item !== 'object') return;
-      const itemId = `s${sec.n}-i${idx}`;
-      const val = radioVal(itemId);
-      const photo = photoSrc(itemId);
-      html += `<div class="pr-special-row">
-        <div>${sec.n}.${idx+1} ${esc(item.text)}${photo?`<img class="pr-photo-thumb" src="${photo}">`:''}</div>
-        <div class="pr-special-opts">
-          ${item.opts.map(([ov,ol])=>`<span><span class="pr-circle ${val===ov?'filled':''}"></span>${esc(ol)}</span>`).join('')}
-        </div>
-      </div>`;
-    });
-  });
-
-  html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
-  for(let i=1;i<=3;i++){
-    const crit = radioVal(`nc${i}-crit`);
-    const photo = photoSrc(`nc${i}`);
-    html += `<div class="pr-nc-block">
-      <h4>NC-0${i}</h4>
-      <div class="pr-field-line">Item do Checklist: <b>${esc(v('nc'+i+'-item'))}</b></div>
-      <div class="pr-field-line">Descrição da Não Conformidade: <b>${esc(v('nc'+i+'-desc'))}</b></div>
-      ${photo?`<img class="pr-photo-thumb" src="${photo}">`:''}
-      <div class="pr-crit-row">Criticidade:
-        <span><span class="pr-checkbox ${crit==='baixa'?'checked':''}"></span>Baixa</span>
-        <span><span class="pr-checkbox ${crit==='media'?'checked':''}"></span>Média</span>
-        <span><span class="pr-checkbox ${crit==='alta'?'checked':''}"></span>Alta</span>
-      </div>
-      <div class="pr-field-line" style="margin-top:4px;">Recomendação Técnica: <b>${esc(v('nc'+i+'-rec'))}</b></div>
-      <div class="pr-field-line">Prazo: <b>${esc(fmtDateBR(v('nc'+i+'-prazo')))}</b></div>
-    </div>`;
-  }
-
-  const classificacao = radioVal('classificacao');
-  html += `<div class="pr-section-title">15. CONCLUSÃO DA INSPEÇÃO</div>`;
-  html += `<div class="pr-field-line" style="font-weight:700;">Classificação Final</div>`;
-  [['apto','APTO PARA OPERAÇÃO'],['restricoes','APTO PARA OPERAÇÃO COM RESTRIÇÕES'],['inapto','INAPTO PARA OPERAÇÃO']].forEach(([cv,cl])=>{
-    html += `<div class="pr-class-opt"><span class="pr-checkbox ${classificacao===cv?'checked':''}"></span> ${cl}</div>`;
-  });
-  html += `<div class="pr-field-line" style="margin-top:8px;font-weight:700;">Considerações Técnicas</div>`;
-  html += `<div class="pr-field-line" style="white-space:pre-wrap;">${esc(v('consideracoes'))}</div>`;
-
-  const sigResp = signatureUrls.respIns;
-  const sigCli = signatureUrls.repCli;
-  const sigBlock = (dataUrl, typedName) => dataUrl
-    ? `<div class="pr-field-line">Assinatura:<br><img class="pr-signature-img" src="${dataUrl}"></div>`
-    : `<div class="pr-field-line">Assinatura: <b>${esc(typedName)}</b></div>`;
-
-  html += `<div class="pr-field-line" style="margin-top:12px;font-weight:700;">Responsável pela Inspeção</div>`;
-  html += `<div class="pr-field-line">Nome: <b>${esc(v('respInsNome'))}</b></div>`;
-  html += `<div class="pr-field-line">CREA: <b>${esc(v('respInsCrea'))}</b></div>`;
-  html += sigBlock(sigResp, v('respInsAssinatura'));
-  html += `<div class="pr-field-line">Data: <b>${esc(fmtDateBR(v('respInsData')))}</b></div>`;
-
-  html += `<div class="pr-field-line" style="margin-top:12px;font-weight:700;">Representante do Cliente</div>`;
-  html += `<div class="pr-field-line">Nome: <b>${esc(v('repCliNome'))}</b></div>`;
-  html += `<div class="pr-field-line">Cargo: <b>${esc(v('repCliCargo'))}</b></div>`;
-  html += sigBlock(sigCli, v('repCliAssinatura'));
-  html += `<div class="pr-field-line">Data: <b>${esc(fmtDateBR(v('repCliData')))}</b></div>`;
-
-  html += '</div>';
-  html += prFooterHTML();
-
-  document.getElementById('print-report').innerHTML = html;
-}
-
-function prFooterHTML(){
-  return `
-  <div class="pr-footer">
-    <svg class="pr-wave-svg" viewBox="0 0 1000 140" preserveAspectRatio="none">
-      <path d="M0,55 C230,130 420,-10 650,45 C820,85 900,60 1000,20 L1000,140 L0,140 Z" fill="#000"/>
-    </svg>
-    <div class="pr-footer-content">
-      <div class="pr-footer-brand">
-        <img src="data:image/png;base64,${LOGO_B64}" alt="ERCR">
-        <div class="txt">
-          <div class="name">ERCR ENGENHARIA</div>
-          <div class="sub">MECÂNICA · CNPJ ${ERCR_CNPJ}</div>
-        </div>
-      </div>
-      <div class="pr-footer-right">
-        (21) 96414-6270 &nbsp;·&nbsp; ERCR.ENGENHARIA<br>
-        WWW.ERCRENGENHARIA.COM.BR
-      </div>
-    </div>
-  </div>`;
-}
-
-function buildReceiptReport(){
-  const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const pagador = v('recPagador') || v('respVeic') || v('empresa');
-  const valor = v('valorServico');
-  const forma = v('formaPagamento');
-  const nf = v('nfNumero');
-
-  let html = '<div class="pr-page">';
-  html += `<div class="pr-title">RECIBO DE PRESTAÇÃO DE SERVIÇO</div>`;
-  if(currentSeq) html += `<div class="pr-field-line" style="color:#555;">Referente à inspeção ${formatSeq(currentSeq)}</div>`;
-
-  html += `<div class="pr-field-line" style="margin-top:18px;">Recebemos de: <b>${esc(pagador)||'____________________________________'}</b></div>`;
-  html += `<div class="pr-field-line">a importância de: <b>${esc(valor)||'____________________________________'}</b></div>`;
-  html += `<div class="pr-field-line">Referente a: <b>Serviço de inspeção e perícia técnica veicular${v('placa')?` — veículo placa ${esc(v('placa'))}`:''}</b></div>`;
-  if(forma) html += `<div class="pr-field-line">Forma de pagamento: <b>${esc(forma)}</b></div>`;
-  if(nf) html += `<div class="pr-field-line">Referente à Nota Fiscal nº: <b>${esc(nf)}</b></div>`;
-  html += `<div class="pr-field-line">Data: <b>${esc(fmtDateBR(v('dataInsp')) || new Date().toLocaleDateString('pt-BR'))}</b></div>`;
-
-  html += `<div class="pr-field-line" style="margin-top:56px;">
-    _________________________________________<br>
-    ERCR ENGENHARIA MECÂNICA<br>
-    CNPJ ${ERCR_CNPJ}
-  </div>`;
-
-  html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
-
-  html += '</div>';
-  html += prFooterHTML();
-
-  document.getElementById('print-report').innerHTML = html;
-}
-
-document.getElementById('btn-receipt').addEventListener('click', async ()=>{
-  await saveRecord();
-  buildReceiptReport();
-  window.print();
-});
-
-document.getElementById('btn-pdf').addEventListener('click', async ()=>{
-  try{
-    if(!currentSeq){
-      const year = new Date().getFullYear();
-      const number = await getNextSeqNumber(year);
-      currentSeq = {number, year};
-      updateSeqBadge();
-    }
-    emissionLog.push(new Date().toISOString());
-    updateEmissionLog();
-    await saveRecord();
-    buildPrintReport();
-    window.print();
-  }catch(err){
-    console.error(err);
-    alert(err.message || 'Não foi possível gerar o PDF. Tente novamente.');
-  }
-});
-
-// ---------- Firebase Authentication ----------
-const lockScreen = document.getElementById('screen-lock');
-const lockContent = document.getElementById('lock-content');
-
-function hideLock(){ lockScreen.style.display = 'none'; }
-function showLock(){ lockScreen.style.display = 'flex'; }
-
-const AUTH_ERROR_MESSAGES = {
-  'auth/invalid-email': 'E-mail inválido.',
-  'auth/user-disabled': 'Esta conta foi desativada.',
-  'auth/user-not-found': 'Não existe conta com este e-mail.',
-  'auth/wrong-password': 'Senha incorreta.',
-  'auth/invalid-credential': 'E-mail ou senha incorretos.',
-  'auth/email-already-in-use': 'Já existe uma conta com este e-mail.',
-  'auth/weak-password': 'A senha precisa ter pelo menos 6 caracteres.',
-  'auth/too-many-requests': 'Muitas tentativas. Aguarde um pouco e tente de novo.',
-};
-function authErrorMessage(err){
-  return AUTH_ERROR_MESSAGES[err.code] || 'Não foi possível concluir. Tente novamente.';
-}
-
-function renderLogin(){
-  lockContent.innerHTML = `
-    <p>Entre com seu e-mail e senha para acessar o checklist.</p>
-    <input type="email" id="auth-email" placeholder="E-mail" autocomplete="username">
-    <input type="password" id="auth-password" placeholder="Senha" autocomplete="current-password">
-    <button class="primary" id="btn-do-login">Entrar</button>
-    <div class="lock-error" id="auth-error" style="display:none;"></div>
-    <p style="margin-top:14px;">Não tem conta? <a href="#" id="link-to-signup" style="color:#E8A33D;">Criar conta</a></p>
-  `;
-  const showError = msg=>{ const el=document.getElementById('auth-error'); el.textContent=msg; el.style.display='block'; };
-  const tryLogin = async ()=>{
-    const email = document.getElementById('auth-email').value.trim();
-    const pass = document.getElementById('auth-password').value;
-    if(!email || !pass){ showError('Preencha e-mail e senha.'); return; }
-    try{
-      await auth.signInWithEmailAndPassword(email, pass);
-    }catch(err){ showError(authErrorMessage(err)); }
-  };
-  document.getElementById('btn-do-login').addEventListener('click', tryLogin);
-  document.getElementById('auth-password').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
-  document.getElementById('link-to-signup').addEventListener('click', e=>{ e.preventDefault(); renderSignup(); });
-}
-
-function renderSignup(){
-  lockContent.innerHTML = `
-    <p>Crie sua conta de acesso ao checklist.</p>
-    <input type="email" id="auth-email" placeholder="E-mail" autocomplete="username">
-    <input type="password" id="auth-password" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password">
-    <button class="primary" id="btn-do-signup">Criar Conta e Entrar</button>
-    <div class="lock-error" id="auth-error" style="display:none;"></div>
-    <p style="margin-top:14px;">Já tem conta? <a href="#" id="link-to-login" style="color:#E8A33D;">Entrar</a></p>
-  `;
-  const showError = msg=>{ const el=document.getElementById('auth-error'); el.textContent=msg; el.style.display='block'; };
-  const trySignup = async ()=>{
-    const email = document.getElementById('auth-email').value.trim();
-    const pass = document.getElementById('auth-password').value;
-    if(!email || !pass){ showError('Preencha e-mail e senha.'); return; }
-    try{
-      await auth.createUserWithEmailAndPassword(email, pass);
-    }catch(err){ showError(authErrorMessage(err)); }
-  };
-  document.getElementById('btn-do-signup').addEventListener('click', trySignup);
-  document.getElementById('auth-password').addEventListener('keydown', e=>{ if(e.key==='Enter') trySignup(); });
-  document.getElementById('link-to-login').addEventListener('click', e=>{ e.preventDefault(); renderLogin(); });
-}
-
-document.getElementById('btn-logout').addEventListener('click', ()=> auth.signOut());
-
-auth.onAuthStateChanged(user=>{
-  if(user){
-    hideLock();
-    showList();
-  } else {
-    showLock();
-    renderLogin();
-  }
-});
-
-updateGauges();
-</script>
 </body>
 </html>
