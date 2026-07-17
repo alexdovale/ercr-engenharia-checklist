@@ -150,11 +150,14 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
     let html = '<div class="pr-page">';
+    
+    // Cabeçalho do Relatório
     html += `<div style="position:relative;">
       <div class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</div>
       ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
     </div>`;
 
+    // Identificação da Inspeção
     html += `<div class="pr-section-title">IDENTIFICAÇÃO DA INSPEÇÃO</div>`;
     html += `<div class="pr-field-line">Empresa Responsável: <b>${esc(v('empresa'))}</b></div>`;
     html += `<div class="pr-field-pair">
@@ -170,6 +173,7 @@ const UIRender = {
     </div>`;
     html += `<div class="pr-field-line">Telefone: <b>${esc(v('telefone'))}</b></div>`;
 
+    // Identificação do Veículo
     html += `<div class="pr-section-title">1. IDENTIFICAÇÃO DO VEÍCULO</div>`;
     [
       ['1.1 Placa', v('placa'), '1.2 Marca/Fabricante', v('marca')],
@@ -246,7 +250,7 @@ const UIRender = {
     html += `<div class="pr-field-line" style="margin-top:8px;font-weight:700;">Considerações Técnicas</div>`;
     html += `<div class="pr-field-line" style="white-space:pre-wrap;">${esc(v('consideracoes'))}</div>`;
 
-    // Assinaturas Dinâmicas
+    // Assinaturas
     html += `<div class="pr-field-line" style="margin-top:12px;font-weight:700;">Responsável pela Inspeção</div>`;
     html += `<div class="pr-field-line">Nome: <b>${esc(v('respInsNome'))}</b></div>`;
     html += `<div class="pr-field-line">CREA: <b>${esc(v('respInsCrea'))}</b></div>`;
@@ -259,8 +263,10 @@ const UIRender = {
     html += UIRender.renderizarBlocoAssinatura(signatureData?.repCli, v('repCliAssinatura'));
     html += `<div class="pr-field-line">Data: <b>${esc(UIRender.fmtDateBR(v('repCliData')))}</b></div>`;
 
-    html += '</div>';
+    // 🔥 ADICIONAMOS O RODAPÉ DENTRO DA DIV PR-PAGE
     html += UIRender.prFooterHTML(logoB64, cnpj);
+    
+    html += '</div>'; // Fecha o pr-page
 
     document.getElementById('print-report').innerHTML = html;
   },
@@ -295,8 +301,10 @@ const UIRender = {
 
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
 
-    html += '</div>';
+    // 🔥 ADICIONAMOS O RODAPÉ DENTRO DA DIV PR-PAGE
     html += UIRender.prFooterHTML(logoB64, cnpj);
+    
+    html += '</div>'; // Fecha o pr-page
 
     document.getElementById('print-report').innerHTML = html;
   }
