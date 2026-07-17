@@ -1,0 +1,291 @@
+/**
+ * css/print.css
+ * Estilos exclusivos para a geração do Relatório em PDF e Impressão
+ */
+
+@media print {
+  /* Esconde tudo do body por padrão */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Mostra apenas a div do relatório e seus filhos */
+  #print-report, #print-report * {
+    visibility: visible;
+  }
+  
+  /* Remove os elementos de interface da tela para não ocuparem espaço nulo */
+  header.dash, 
+  .actions, 
+  .footnote, 
+  #screen-list, 
+  #screen-lock, 
+  #screen-form {
+    display: none !important;
+  }
+  
+  /* Posiciona o relatório no topo da página de impressão */
+  #print-report {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  
+  /* Força o fundo branco para economizar tinta e manter a formalidade */
+  body {
+    background: #ffffff;
+  }
+
+  /* Configuração da folha A4 com margens para caber o rodapé */
+  @page { 
+    size: A4; 
+    margin: 16mm 14mm 34mm 14mm; 
+  }
+
+  /* Tipografia do Documento */
+  .pr-page {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #111111;
+    font-size: 10.5px;
+    line-height: 1.45;
+  }
+  
+  .pr-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  
+  .pr-seq {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 9px;
+    font-weight: 700;
+    color: #333333;
+  }
+  
+  .pr-section-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    margin: 16px 0 6px;
+    break-after: avoid; /* Evita quebra de página logo após o título */
+  }
+
+  /* Campos de Informação */
+  .pr-field-line {
+    margin-bottom: 5px;
+  }
+  
+  .pr-field-line b {
+    font-weight: 400;
+    border-bottom: 1px solid #111111;
+    padding-bottom: 1px;
+  }
+  
+  .pr-field-pair {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+  }
+  
+  .pr-field-pair > div {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  /* Tabelas do Checklist */
+  table.pr-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4px;
+  }
+  
+  table.pr-table th {
+    font-weight: 700;
+    font-size: 10px;
+    text-align: center;
+    padding: 4px 3px;
+    border-bottom: 1px solid #111111;
+  }
+  
+  table.pr-table th:first-child {
+    text-align: left;
+  }
+  
+  table.pr-table td {
+    padding: 4px 3px;
+    font-size: 10px;
+    vertical-align: top;
+    border-bottom: 1px dotted #cccccc;
+  }
+  
+  table.pr-table td.pr-item-cell {
+    text-align: left;
+  }
+  
+  table.pr-table td.pr-circle-cell {
+    text-align: center;
+    width: 70px;
+  }
+
+  /* Indicadores Visuais (Bolinhas e Checkboxes) */
+  .pr-circle {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 1.3px solid #333333;
+    border-radius: 50%;
+  }
+  
+  .pr-circle.filled {
+    background: #111111;
+  }
+  
+  .pr-row {
+    break-inside: avoid; /* Evita quebrar uma linha no meio entre duas páginas */
+  }
+  
+  .pr-photo-thumb {
+    display: block;
+    margin-top: 3px;
+    max-width: 70px;
+    max-height: 70px;
+    border: 1px solid #999999;
+  }
+
+  /* Linhas Especiais e Opções */
+  .pr-special-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px dotted #cccccc;
+    font-size: 10px;
+  }
+  
+  .pr-special-opts {
+    display: flex;
+    gap: 14px;
+  }
+  
+  .pr-special-opts span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Bloco de Não Conformidades */
+  .pr-nc-block {
+    border: 1px solid #999999;
+    border-radius: 3px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    break-inside: avoid;
+  }
+  
+  .pr-nc-block h4 {
+    margin: 0 0 4px;
+    font-size: 11px;
+  }
+  
+  .pr-crit-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 3px;
+  }
+  
+  .pr-checkbox {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border: 1.2px solid #333333;
+    margin-right: 3px;
+    position: relative;
+    top: 1px;
+  }
+  
+  .pr-checkbox.checked {
+    background: #111111;
+  }
+  
+  .pr-class-opt {
+    margin-bottom: 4px;
+  }
+
+  /* Assinatura */
+  .pr-signature-img {
+    max-width: 180px;
+    max-height: 60px;
+    margin-top: 2px;
+  }
+
+  /* Rodapé Personalizado (Aquele fundo curvado com a logo) */
+  .pr-footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 26mm;
+  }
+  
+  .pr-wave-svg {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  
+  .pr-footer-content {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 14mm 5mm;
+    box-sizing: border-box;
+  }
+  
+  .pr-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .pr-footer-brand img {
+    width: 34px;
+    height: auto;
+  }
+  
+  .pr-footer-brand .txt {
+    color: #ffffff;
+    line-height: 1.25;
+  }
+  
+  .pr-footer-brand .txt .name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+  
+  .pr-footer-brand .txt .sub {
+    font-size: 8px;
+    letter-spacing: .15em;
+  }
+  
+  .pr-footer-right {
+    color: #ffffff;
+    font-size: 8.5px;
+    text-align: right;
+    line-height: 1.5;
+  }
+}
