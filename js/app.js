@@ -1,6 +1,6 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador)
+ * Arquivo Principal (Orquestrador) - Versão Final
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadList();
   });
 
-  // 5. Função Carregar Lista (Corrigida e Unificada)
+  // 5. Função Carregar Lista (Status + Exclusão)
   async function loadList() {
     listContainer.innerHTML = '<div class="list-loading">Carregando inspeções…</div>';
     try {
@@ -70,11 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<h3>${title}</h3>${items || '<div class="list-empty">Vazio</div>'}`;
       };
 
-      listContainer.innerHTML = `
-        ${renderGroup('rascunho', 'Rascunhos')}
-        ${renderGroup('pendente_revisao', 'Pendentes de Revisão')}
-        ${renderGroup('revisado', 'Aprovados')}
-      `;
+      listContainer.innerHTML = `${renderGroup('rascunho', 'Rascunhos')}${renderGroup('pendente_revisao', 'Pendentes de Revisão')}${renderGroup('revisado', 'Aprovados')}`;
 
       listContainer.querySelectorAll('.card').forEach(card => {
         card.addEventListener('click', (e) => {
@@ -94,39 +90,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     } catch (err) {
-      console.error("🚨 ERRO DETALHADO AO CARREGAR LISTA:", err);
-      listContainer.innerHTML = '<div class="list-empty">Erro ao carregar inspeções.</div>';
+      console.error("🚨 ERRO AO CARREGAR:", err);
     }
   }
 
-  // 6. Lógica de Checklist e Salvamento (mantida igual)
+  // 6. Lógica de Checklist e Fotos
   sectionsContainer.addEventListener('click', (e) => {
+    // Opções
     const opt = e.target.closest('.opt');
-    if (!opt) return;
-    const group = opt.closest('.opts');
-    group.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
-    opt.classList.add('sel');
-    opt.querySelector('input').checked = true;
-    updateGauges();
+    if (opt) {
+      const group = opt.closest('.opts');
+      group.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+      opt.classList.add('sel');
+      opt.querySelector('input').checked = true;
+      updateGauges();
+    }
+    // Botão de Foto
+    if (e.target.classList.contains('photo-btn')) {
+      e.target.nextElementSibling.click();
+    }
+  });
+
+  sectionsContainer.addEventListener('change', async (e) => {
+    if (e.target.type === 'file' && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const itemCell = e.target.closest('.photo-cell');
+      const itemId = itemCell.dataset.photoItem;
+      itemCell.querySelector('.photo-thumb-wrap').innerHTML = 'Carregando...';
+      try {
+        const url = await StorageService.uploadPhoto(currentRecordId, itemId, file);
+        photoUrls[itemId] = url;
+        itemCell.querySelector('.photo-thumb-wrap').innerHTML = `<div class="photo-thumb"><img src="${url}"></div>`;
+      } catch (err) {
+        alert(err.message);
+        itemCell.querySelector('.photo-thumb-wrap').innerHTML = '';
+      }
+    }
   });
 
   function updateGauges() {
     let c = 0, nc = 0, na = 0;
-    const radios = document.querySelectorAll('.opts input[type="radio"]:checked');
-    radios.forEach(checked => {
-      const v = checked.value;
+    document.querySelectorAll('.opts input[type="radio"]:checked').forEach(r => {
+      const v = r.value;
       if (v === 'conforme' || v === 'realizado') c++;
       else if (v === 'nao_conforme' || v === 'nao_realizado') nc++;
       else na++;
     });
-    const total = document.querySelectorAll('.opts').length;
-    const pend = total - c - nc - na;
     document.getElementById('cnt-c').textContent = c;
     document.getElementById('cnt-nc').textContent = nc;
     document.getElementById('cnt-na').textContent = na;
-    document.getElementById('cnt-pend').textContent = pend;
+    document.getElementById('cnt-pend').textContent = (document.querySelectorAll('.opts').length - c - nc - na);
   }
 
+  // 7. Salvamento e PDF
   async function collectState() {
     const state = { text: {}, radios: {}, status: document.getElementById('status-select').value, photoUrls: { ...photoUrls }, seq: currentSeq, emissionLog: emissionLog };
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => { if (el.id) state.text[el.id] = el.value; });
@@ -143,43 +159,32 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const state = await collectState();
       currentRecordId = await StorageService.saveInspection(currentRecordId, state);
-      const label = document.getElementById('rec-id-label');
-      label.textContent = 'SALVO ✓';
-      setTimeout(() => { label.textContent = `ID ${currentRecordId}`; }, 1500);
+      alert('Salvo com sucesso!');
     } catch (err) {
-      console.error("🚨 ERRO DETALHADO AO SALVAR:", err);
-      alert("Erro ao salvar: " + err.message);
+      console.error("🚨 ERRO AO SALVAR:", err);
+      alert("Erro: " + err.message);
     }
   });
 
   document.getElementById('btn-pdf').addEventListener('click', async () => {
     try {
-      if (!currentSeq) {
-        const year = new Date().getFullYear();
-        currentSeq = { number: await StorageService.getNextSeqNumber(year), year };
-      }
-      emissionLog.push(new Date().toISOString());
+      if (!currentSeq) currentSeq = { number: await StorageService.getNextSeqNumber(new Date().getFullYear()), year: new Date().getFullYear() };
       const state = await collectState();
-      await StorageService.saveInspection(currentRecordId, state);
+      currentRecordId = await StorageService.saveInspection(currentRecordId, state);
       UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
       window.print();
     } catch (err) {
-      console.error("🚨 ERRO DETALHADO NO PDF:", err);
-      alert("Erro ao gerar PDF: " + err.message);
+      console.error("🚨 ERRO NO PDF:", err);
+      alert("Erro: " + err.message);
     }
   });
 
   function clearFormUI() {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
-    document.querySelectorAll('.opt, .crit, .class-opt').forEach(el => el.classList.remove('sel', 'sel-apto', 'sel-restr', 'sel-inapto'));
-    document.getElementById('status-select').value = 'rascunho';
-    photoUrls = {};
-    currentSeq = null;
-    emissionLog = [];
-    updateGauges();
-    canvasProvider.clear('respIns');
-    canvasProvider.clear('repCli');
+    document.querySelectorAll('.opt').forEach(el => el.classList.remove('sel'));
+    photoUrls = {}; currentSeq = null; updateGauges();
+    canvasProvider.clear('respIns'); canvasProvider.clear('repCli');
   }
 
   async function loadRecord(id) {
@@ -195,11 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('status-select').value = state.status || 'rascunho';
     photoUrls = state.photoUrls || {};
     currentSeq = state.seq || null;
-    emissionLog = state.emissionLog || [];
     document.getElementById('rec-id-label').textContent = `ID ${id}`;
-    document.getElementById('btn-delete').style.display = '';
-    screenList.style.display = 'none';
-    screenForm.style.display = '';
+    screenList.style.display = 'none'; screenForm.style.display = '';
     updateGauges();
   }
 });
