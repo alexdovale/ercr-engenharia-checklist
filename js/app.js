@@ -20,15 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const listContainer = document.getElementById('inspection-list');
   const sectionsContainer = document.getElementById('sections-container');
 
-  // 2. Escuta o evento de Login bem-sucedido para carregar a lista
+  // 2. Escuta o evento de Login bem-sucedido
   window.addEventListener('auth-success', async (e) => {
     await loadList();
   });
 
-  // 3. Renderiza o Checklist Dinâmico na tela
+  // 3. Renderiza o Checklist Dinâmico
   UIRender.renderChecklist('sections-container', SECTIONS);
 
-  // 4. Navegação Básica
+  // 4. Navegação
   document.getElementById('btn-new-inspection').addEventListener('click', () => {
     currentRecordId = null;
     clearFormUI();
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadList();
   });
 
-  // 5. Função para Carregar a Lista do Firestore
+  // 5. Função Carregar Lista (Corrigida e Unificada)
   async function loadList() {
     listContainer.innerHTML = '<div class="list-loading">Carregando inspeções…</div>';
     try {
@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Agrupa por status
       const groups = { rascunho: [], pendente_revisao: [], revisado: [] };
       records.forEach(r => groups[r.status || 'rascunho'].push(r));
 
@@ -65,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="placa">${rec.text?.placa || '(sem placa)'}</div>
               <div class="meta">${rec.text?.empresa || ''}</div>
             </div>
-            <button class="btn-delete-card" data-id="${rec.id}" title="Excluir">🗑️</button>
+            <button class="btn-delete-card" data-id="${rec.id}" data-photos='${JSON.stringify(rec.photoUrls || {})}' title="Excluir">🗑️</button>
           </div>
         `).join('');
         return `<h3>${title}</h3>${items || '<div class="list-empty">Vazio</div>'}`;
@@ -77,39 +76,30 @@ document.addEventListener('DOMContentLoaded', () => {
         ${renderGroup('revisado', 'Aprovados')}
       `;
 
-      // Adiciona eventos de clique
       listContainer.querySelectorAll('.card').forEach(card => {
         card.addEventListener('click', (e) => {
           if (!e.target.classList.contains('btn-delete-card')) loadRecord(card.dataset.id);
         });
       });
 
-      // Adiciona eventos de exclusão
       listContainer.querySelectorAll('.btn-delete-card').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (confirm('Deseja realmente excluir esta inspeção?')) {
-            await StorageService.deleteInspection(btn.dataset.id);
+            const id = btn.dataset.id;
+            const photos = JSON.parse(btn.dataset.photos || '{}');
+            await StorageService.deleteInspection(id, photos);
             loadList();
           }
         });
       });
     } catch (err) {
-      console.error("🚨 ERRO AO CARREGAR:", err);
-    }
-  }
-
-      // Adiciona evento de clique em cada card
-      listContainer.querySelectorAll('.card').forEach(card => {
-        card.addEventListener('click', () => loadRecord(card.dataset.id));
-      });
-    } catch (err) {
       console.error("🚨 ERRO DETALHADO AO CARREGAR LISTA:", err);
-      listContainer.innerHTML = '<div class="list-empty">Erro ao carregar as inspeções. Verifique o console (F12).</div>';
+      listContainer.innerHTML = '<div class="list-empty">Erro ao carregar inspeções.</div>';
     }
   }
 
-  // 6. Lógica de Interação com o Formulário (Cliques em botões Conforme/Não Conforme)
+  // 6. Lógica de Checklist e Salvamento (mantida igual)
   sectionsContainer.addEventListener('click', (e) => {
     const opt = e.target.closest('.opt');
     if (!opt) return;
@@ -129,38 +119,23 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (v === 'nao_conforme' || v === 'nao_realizado') nc++;
       else na++;
     });
-    
-    // Contagem total baseada nas perguntas geradas
     const total = document.querySelectorAll('.opts').length;
     const pend = total - c - nc - na;
-    
     document.getElementById('cnt-c').textContent = c;
     document.getElementById('cnt-nc').textContent = nc;
     document.getElementById('cnt-na').textContent = na;
     document.getElementById('cnt-pend').textContent = pend;
   }
 
-  // 7. Lógica de Salvamento
   async function collectState() {
     const state = { text: {}, radios: {}, status: document.getElementById('status-select').value, photoUrls: { ...photoUrls }, seq: currentSeq, emissionLog: emissionLog };
-    
-    // Coleta campos de texto
-    document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => {
-      if (el.id) state.text[el.id] = el.value;
-    });
-    
-    // Coleta botões de rádio
-    document.querySelectorAll('input[type=radio]:checked').forEach(r => {
-      state.radios[r.name] = r.value;
-    });
-    
-    // Coleta assinaturas através do SignatureManager
+    document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => { if (el.id) state.text[el.id] = el.value; });
+    document.querySelectorAll('input[type=radio]:checked').forEach(r => { state.radios[r.name] = r.value; });
     state.signatures = {
       methodUsed: signatureManager.currentMethod,
       respIns: await signatureManager.collectSignature('respIns'),
       repCli: await signatureManager.collectSignature('repCli')
     };
-    
     return state;
   }
 
@@ -168,19 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const state = await collectState();
       currentRecordId = await StorageService.saveInspection(currentRecordId, state);
-      
       const label = document.getElementById('rec-id-label');
-      const original = label.textContent;
       label.textContent = 'SALVO ✓';
       setTimeout(() => { label.textContent = `ID ${currentRecordId}`; }, 1500);
-      
     } catch (err) {
       console.error("🚨 ERRO DETALHADO AO SALVAR:", err);
       alert("Erro ao salvar: " + err.message);
     }
   });
 
-  // 8. Lógica do PDF
   document.getElementById('btn-pdf').addEventListener('click', async () => {
     try {
       if (!currentSeq) {
@@ -188,24 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSeq = { number: await StorageService.getNextSeqNumber(year), year };
       }
       emissionLog.push(new Date().toISOString());
-      
-      // Salva antes de gerar o PDF
       const state = await collectState();
       await StorageService.saveInspection(currentRecordId, state);
-      
-      // Monta o relatório HTML e chama a impressão nativa
-      // NOTA: Para funcionar sem Base64 solto no código, você precisará importar a logo
-      // Como não temos a logo aqui, deixaremos em branco ou você insere o Base64 novamente
       UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
       window.print();
-      
     } catch (err) {
       console.error("🚨 ERRO DETALHADO NO PDF:", err);
       alert("Erro ao gerar PDF: " + err.message);
     }
   });
 
-  // Funções Auxiliares (Limpar UI, Carregar UI, etc.)
   function clearFormUI() {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
@@ -215,8 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSeq = null;
     emissionLog = [];
     updateGauges();
-    
-    // Limpa os canvases de assinatura
     canvasProvider.clear('respIns');
     canvasProvider.clear('repCli');
   }
@@ -224,34 +185,19 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadRecord(id) {
     const state = await StorageService.getInspection(id);
     if (!state) return;
-    
     currentRecordId = id;
     clearFormUI();
-    
-    // Aplica Textos
-    Object.entries(state.text || {}).forEach(([key, val]) => {
-      const el = document.getElementById(key);
-      if (el) el.value = val;
-    });
-    
-    // Aplica Radios
+    Object.entries(state.text || {}).forEach(([key, val]) => { const el = document.getElementById(key); if (el) el.value = val; });
     Object.entries(state.radios || {}).forEach(([name, val]) => {
       const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
-      if (input) {
-        input.checked = true;
-        const label = input.closest('label');
-        if (label) label.classList.add('sel'); // Simulação visual simplificada
-      }
+      if (input) { input.checked = true; input.closest('label').classList.add('sel'); }
     });
-    
     document.getElementById('status-select').value = state.status || 'rascunho';
     photoUrls = state.photoUrls || {};
     currentSeq = state.seq || null;
     emissionLog = state.emissionLog || [];
-    
     document.getElementById('rec-id-label').textContent = `ID ${id}`;
     document.getElementById('btn-delete').style.display = '';
-    
     screenList.style.display = 'none';
     screenForm.style.display = '';
     updateGauges();
