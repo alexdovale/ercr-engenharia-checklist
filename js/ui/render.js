@@ -119,6 +119,8 @@ const UIRender = {
   },
 
   prFooterHTML: (logoB64, cnpj) => {
+    // Utilizando o link RAW direto do GitHub conforme solicitado
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
     return `
     <div class="pr-footer">
       <svg class="pr-wave-svg" viewBox="0 0 1000 140" preserveAspectRatio="none">
@@ -126,7 +128,7 @@ const UIRender = {
       </svg>
       <div class="pr-footer-content">
         <div class="pr-footer-brand">
-          <img src="data:image/png;base64,${logoB64}" alt="ERCR">
+          <img src="${logoUrl}" alt="ERCR">
           <div class="txt">
             <div class="name">ERCR ENGENHARIA</div>
             <div class="sub">MECÂNICA · CNPJ ${cnpj}</div>
@@ -148,16 +150,22 @@ const UIRender = {
     const radioVal = name => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; };
     const photoSrc = itemId => { const img = document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb img`); return img ? img.src : null; };
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
     let html = '<div class="pr-page">';
     
-    // Cabeçalho do Relatório
+    // 🔥 LOGO CENTRALIZADA NO TOPO DA PRIMEIRA PÁGINA
+    html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
+      <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
+    </div>`;
+
+    // Cabeçalho do Relatório[span_0](start_span)[span_0](end_span)
     html += `<div style="position:relative;">
       <div class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</div>
       ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
     </div>`;
 
-    // Identificação da Inspeção
+    // Identificação da Inspeção[span_1](start_span)[span_1](end_span)
     html += `<div class="pr-section-title">IDENTIFICAÇÃO DA INSPEÇÃO</div>`;
     html += `<div class="pr-field-line">Empresa Responsável: <b>${esc(v('empresa'))}</b></div>`;
     html += `<div class="pr-field-pair">
@@ -281,8 +289,15 @@ const UIRender = {
     const valor = v('valorServico');
     const forma = v('formaPagamento');
     const nf = v('nfNumero');
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
     let html = '<div class="pr-page">';
+
+    // 🔥 LOGO CENTRALIZADA TAMBÉM NO RECIBO
+    html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
+      <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
+    </div>`;
+
     html += `<div class="pr-title">RECIBO DE PRESTAÇÃO DE SERVIÇO</div>`;
     if(currentSeq) html += `<div class="pr-field-line" style="color:#555;">Referente à inspeção ${UIRender.formatSeq(currentSeq)}</div>`;
 
