@@ -246,6 +246,88 @@ button.danger:hover { border-color: var(--red); }
 .lock-box button { width: 100%; }
 .lock-error { color: #EF5350; font-size: 12px; margin-top: 6px; }
 
-
-
+/* Estilos de Impressão */
 #print-report { display: none; }
+
+@media print {
+  /* Garante que a página ocupe o tamanho total e o rodapé fique no fim */
+  .pr-page {
+    position: relative;
+    min-height: 100vh;
+    padding-bottom: 150px; /* Espaço para o rodapé não cobrir o conteúdo */
+  }
+
+  .pr-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  /* Remove margens extras do navegador */
+  @page {
+    margin: 1cm;
+  }
+
+  /* Ajustes adicionais para impressão */
+  #screen-lock {
+    display: none !important;
+  }
+
+  header.dash {
+    position: relative;
+    background: #000000 !important;
+    color: #FFFFFF !important;
+    border-bottom: 1px solid #000000 !important;
+  }
+
+  .actions {
+    display: none !important;
+  }
+
+  .photo-btn, .photo-remove {
+    display: none !important;
+  }
+
+  .photo-thumb {
+    border: 1px solid #000000 !important;
+  }
+
+  .opt, .crit, .class-opt {
+    cursor: default !important;
+  }
+
+  .opt input, .crit input, .class-opt input {
+    position: static !important;
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin-right: 5px;
+  }
+
+  .opt.sel, .crit.sel, .class-opt.sel {
+    background: #f0f0f0 !important;
+    border-color: #000000 !important;
+  }
+
+  .sheet {
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .card:hover {
+    transform: none !important;
+  }
+
+  .gauge {
+    border: 1px solid #000000 !important;
+  }
+
+  .gauge .num {
+    color: #000000 !important;
+  }
+
+  .badge {
+    border: 1px solid #000000 !important;
+  }
+}
