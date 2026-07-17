@@ -53,23 +53,51 @@ document.addEventListener('DOMContentLoaded', () => {
         listContainer.innerHTML = '<div class="list-empty">Nenhuma inspeção cadastrada.</div>';
         return;
       }
-      
-      listContainer.innerHTML = records.map(rec => {
-        const empresa = rec.text?.empresa || '(sem empresa)';
-        const placa = rec.text?.placa || '(sem placa)';
-        const dataFmt = rec.text?.dataInsp ? rec.text.dataInsp.split('-').reverse().join('/') : '—';
-        const seqLabel = rec.seq ? `${UIRender.formatSeq(rec.seq)} · ` : '';
-        const status = rec.status || 'rascunho';
-        const statusLabel = status === 'revisado' ? 'Revisado / Aprovado' : (status === 'pendente_revisao' ? 'Pendente de Revisão' : 'Rascunho');
-        
-        return `<div class="card" data-id="${rec.id}">
-          <div class="info">
-            <div class="placa">${placa}</div>
-            <div class="meta">${seqLabel}${empresa} · ${dataFmt}</div>
+
+      // Agrupa por status
+      const groups = { rascunho: [], pendente_revisao: [], revisado: [] };
+      records.forEach(r => groups[r.status || 'rascunho'].push(r));
+
+      const renderGroup = (status, title) => {
+        const items = groups[status].map(rec => `
+          <div class="card" data-id="${rec.id}">
+            <div class="info">
+              <div class="placa">${rec.text?.placa || '(sem placa)'}</div>
+              <div class="meta">${rec.text?.empresa || ''}</div>
+            </div>
+            <button class="btn-delete-card" data-id="${rec.id}" title="Excluir">🗑️</button>
           </div>
-          <div class="badge ${status}">${statusLabel}</div>
-        </div>`;
-      }).join('');
+        `).join('');
+        return `<h3>${title}</h3>${items || '<div class="list-empty">Vazio</div>'}`;
+      };
+
+      listContainer.innerHTML = `
+        ${renderGroup('rascunho', 'Rascunhos')}
+        ${renderGroup('pendente_revisao', 'Pendentes de Revisão')}
+        ${renderGroup('revisado', 'Aprovados')}
+      `;
+
+      // Adiciona eventos de clique
+      listContainer.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('btn-delete-card')) loadRecord(card.dataset.id);
+        });
+      });
+
+      // Adiciona eventos de exclusão
+      listContainer.querySelectorAll('.btn-delete-card').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm('Deseja realmente excluir esta inspeção?')) {
+            await StorageService.deleteInspection(btn.dataset.id);
+            loadList();
+          }
+        });
+      });
+    } catch (err) {
+      console.error("🚨 ERRO AO CARREGAR:", err);
+    }
+  }
 
       // Adiciona evento de clique em cada card
       listContainer.querySelectorAll('.card').forEach(card => {
