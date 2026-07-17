@@ -242,7 +242,7 @@
   <div id="print-report"></div>
 
   <!-- Gerador estático HTML das NCs para manter compatibilidade com o formato original -->
-  <script>
+  <script defer>
     const ncContainer = document.getElementById('nc-container');
     if (ncContainer) {
       for (let i = 1; i <= 3; i++) {
@@ -278,19 +278,19 @@
   </script>
 
   <!-- Importação dos Scripts Modulares -->
-  <script src="js/config/firebase.js"></script>
-  <script src="js/data/sections.js"></script>
-  <script src="js/services/storage.js"></script>
-  <script src="js/services/auth.js"></script>
+  <script src="js/config/firebase.js" defer></script>
+  <script src="js/data/sections.js" defer></script>
+  <script src="js/services/storage.js" defer></script>
+  <script src="js/services/auth.js" defer></script>
   
   <!-- Assinaturas e Padrão Strategy -->
-  <script src="js/services/signatures/signature-manager.js"></script>
-  <script src="js/services/signatures/canvas-provider.js"></script>
-  <script src="js/services/signatures/icp-provider.js"></script>
-  <script src="js/services/signatures/api-provider.js"></script>
+  <script src="js/services/signatures/signature-manager.js" defer></script>
+  <script src="js/services/signatures/canvas-provider.js" defer></script>
+  <script src="js/services/signatures/icp-provider.js" defer></script>
+  <script src="js/services/signatures/api-provider.js" defer></script>
   
-  <script src="js/ui/render.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/ui/render.js" defer></script>
+  <script src="js/app.js" defer></script>
 
 </body>
 </html>
