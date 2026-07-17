@@ -1,17 +1,11 @@
 /**
  * Provedor de Assinatura Híbrida (Canvas + Metadados)
- * Captura o desenho da assinatura em tela e anexa dados de auditoria (Geolocalização, Usuário, Data/Hora).
  */
 class CanvasProvider {
   constructor() {
     this.canvases = {};
   }
 
-  /**
-   * Configura os eventos de toque e mouse para um elemento canvas específico
-   * @param {string} role - 'respIns' (Inspetor) ou 'repCli' (Cliente)
-   * @param {string} canvasId - O ID do elemento <canvas> no HTML
-   */
   setup(role, canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -56,14 +50,9 @@ class CanvasProvider {
       canvas.addEventListener(evt, () => { drawing = false; });
     });
 
-    // Armazena a referência para uso posterior
     this.canvases[role] = canvas;
   }
 
-  /**
-   * Limpa o desenho do canvas
-   * @param {string} role - 'respIns' ou 'repCli'
-   */
   clear(role) {
     const canvas = this.canvases[role];
     if (!canvas) return;
@@ -73,16 +62,9 @@ class CanvasProvider {
     canvas._dirty = true;
   }
 
-  /**
-   * Captura a geolocalização do dispositivo (requer permissão do navegador)
-   * @returns {Promise<object|null>} Coordenadas ou nulo se negado/falhar
-   */
   async _getLocation() {
     return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve(null);
-        return;
-      }
+      if (!navigator.geolocation) { resolve(null); return; }
       navigator.geolocation.getCurrentPosition(
         (position) => {
           resolve({
@@ -91,51 +73,45 @@ class CanvasProvider {
             accuracy: position.coords.accuracy
           });
         },
-        (error) => {
-          console.warn("Geolocalização não disponível ou negada pelo usuário.", error);
-          resolve(null); // Retorna nulo se o usuário negar para não travar o processo
-        },
-        { timeout: 5000 } // Desiste após 5 segundos para não atrasar o salvamento
+        () => resolve(null),
+        { timeout: 5000 }
       );
     });
   }
 
-  /**
-   * Método principal chamado pelo SignatureManager
-   * @param {string} role - 'respIns' ou 'repCli'
-   * @returns {Promise<object>} Objeto contendo a imagem Base64 e os metadados
-   */
   async sign(role) {
     const canvas = this.canvases[role];
     if (!canvas) throw new Error(`Canvas para ${role} não foi configurado.`);
+    if (!canvas._hasDrawn) return null;
 
-    // Se o usuário não desenhou nada, retorna nulo para este papel
-    if (!canvas._hasDrawn) {
-      return null;
-    }
-
-    // Pega a imagem base64
     const dataUrl = canvas.toDataURL('image/png');
-
-    // Coleta dados de auditoria
     const location = await this._getLocation();
-    
-    // Obtém o usuário logado no Firebase naquele momento
     const currentUser = firebase.auth().currentUser;
     const userInfo = currentUser ? { uid: currentUser.uid, email: currentUser.email } : null;
 
     return {
-      image: dataUrl, // A imagem que será enviada ao Firebase Storage
+      image: dataUrl,
       metadata: {
-        timestamp: new Date().toISOString(), // Hora exata da assinatura local
-        location: location,                  // Onde a assinatura foi feita
-        authenticatedUser: userInfo,         // Quem estava logado no tablet/celular
-        browserInfo: navigator.userAgent     // Dados do dispositivo
+        timestamp: new Date().toISOString(),
+        location: location,
+        authenticatedUser: userInfo,
+        browserInfo: navigator.userAgent
       }
     };
   }
 }
 
-// Instancia e registra o provedor no SignatureManager
+// Instancia e registra o provedor
 const canvasProvider = new CanvasProvider();
 signatureManager.registerProvider('canvas', canvasProvider);
+
+// 🔥 CONFIGURAÇÃO AUTOMÁTICA
+function initCanvasProviders() {
+  const respIns = document.getElementById('sig-respIns');
+  const repCli = document.getElementById('sig-repCli');
+  
+  if (respIns) canvasProvider.setup('respIns', 'sig-respIns');
+  if (repCli) canvasProvider.setup('repCli', 'sig-repCli');
+}
+
+document.addEventListener('DOMContentLoaded', initCanvasProviders);
