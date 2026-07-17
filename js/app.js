@@ -76,7 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
         card.addEventListener('click', () => loadRecord(card.dataset.id));
       });
     } catch (err) {
-      listContainer.innerHTML = '<div class="list-empty">Erro ao carregar as inspeções.</div>';
+      console.error("🚨 ERRO DETALHADO AO CARREGAR LISTA:", err);
+      listContainer.innerHTML = '<div class="list-empty">Erro ao carregar as inspeções. Verifique o console (F12).</div>';
     }
   }
 
@@ -146,7 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => { label.textContent = `ID ${currentRecordId}`; }, 1500);
       
     } catch (err) {
-      alert(err.message);
+      console.error("🚨 ERRO DETALHADO AO SALVAR:", err);
+      alert("Erro ao salvar: " + err.message);
     }
   });
 
@@ -170,7 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
       window.print();
       
     } catch (err) {
-      alert("Erro ao gerar PDF.");
+      console.error("🚨 ERRO DETALHADO NO PDF:", err);
+      alert("Erro ao gerar PDF: " + err.message);
     }
   });
 
