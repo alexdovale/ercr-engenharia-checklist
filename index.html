@@ -72,9 +72,14 @@
           <div class="gauge pend"><div class="num" id="cnt-pend">0</div><div class="lbl">Pendente</div></div>
         </div>
       </div>
-      <div class="progress-track" id="progress-track"></div>
-      <div class="dash-controls">
-        <button class="btn-link" id="btn-back-list">← Voltar à Lista</button>
+      <div class="progress-track" id="progress-track"></      <div class="dash-controls">
+        <button class="btn-link" id="btn-back-list">← Voltar</button>
+        
+        <!-- 🔥 NOVO MENU DE NAVEGAÇÃO RÁPIDA -->
+        <select id="quick-nav" style="margin-right: 8px; border-color: #2E7D32; background: #000; color: #fff; font-size: 11px; padding: 6px; border-radius: 4px;">
+          <option value="">Ir para a seção...</option>
+        </select>
+
         <label style="font-size:11px;color:var(--muted);">Status:
           <select id="status-select">
             <option value="rascunho">Rascunho</option>
