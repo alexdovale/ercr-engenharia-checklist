@@ -72,7 +72,9 @@
           <div class="gauge pend"><div class="num" id="cnt-pend">0</div><div class="lbl">Pendente</div></div>
         </div>
       </div>
-      <div class="progress-track" id="progress-track"></      <div class="dash-controls">
+      <div class="progress-track" id="progress-track"></div>
+      
+      <div class="dash-controls">
         <button class="btn-link" id="btn-back-list">← Voltar</button>
         
         <!-- 🔥 NOVO MENU DE NAVEGAÇÃO RÁPIDA -->
@@ -262,6 +264,7 @@
     const ncContainer = document.getElementById('nc-container');
     if (ncContainer) {
       for (let i = 1; i <= 3; i++) {
+        // 🔥 REMOVIDO capture="environment" AQUI PARA PERMITIR GALERIA NAS NCs TAMBÉM
         ncContainer.innerHTML += `
           <div class="nc-block">
             <h3>NC-0${i}</h3>
@@ -273,7 +276,7 @@
                 <label>Foto</label>
                 <div class="photo-cell" data-photo-item="nc${i}">
                   <button type="button" class="photo-btn" title="Anexar foto">📷</button>
-                  <input type="file" accept="image/*" capture="environment" style="display:none">
+                  <input type="file" accept="image/*" style="display:none">
                   <div class="photo-thumb-wrap"></div>
                 </div>
               </div>
