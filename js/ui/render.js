@@ -14,10 +14,10 @@ const UIRender = {
     
     container.innerHTML = ''; // Limpa antes de renderizar
 
-        sectionsArray.forEach(sec => {
+    sectionsArray.forEach(sec => {
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
-      sheet.id = `secao-${sec.n}`; // 🔥 ÂNCORA PARA O MENU RÁPIDO
+      sheet.id = `secao-${sec.n}`; // 🔥 ÂNCORA PARA O MENU DE NAVEGAÇÃO RÁPIDA
       
       const head = document.createElement('div');
       head.className = 'sheet-head';
@@ -48,18 +48,13 @@ const UIRender = {
           </div>
           <div class="photo-cell" data-photo-item="${itemId}">
             <button type="button" class="photo-btn" title="Anexar foto">📷</button>
-            <!-- 🔥 TIREI O CAPTURE="ENVIRONMENT" PARA PERMITIR GALERIA E CÂMERA -->
+            <!-- 🔥 TIREI O CAPTURE="ENVIRONMENT" PARA PERMITIR ESCOLHER DA GALERIA OU CÂMERA -->
             <input type="file" accept="image/*" style="display:none">
             <div class="photo-thumb-wrap"></div>
           </div>
         `;
         body.appendChild(row);
       });
-      
-      sheet.appendChild(body);
-      container.appendChild(sheet);
-    });
-
       
       sheet.appendChild(body);
       container.appendChild(sheet);
@@ -126,7 +121,7 @@ const UIRender = {
   },
 
   prFooterHTML: (logoB64, cnpj) => {
-    // Utilizando o link RAW direto do GitHub conforme solicitado
+    // Utilizando o link RAW direto do GitHub
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
     return `
     <div class="pr-footer">
@@ -166,13 +161,13 @@ const UIRender = {
       <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
     </div>`;
 
-    // Cabeçalho do Relatório[span_0](start_span)[span_0](end_span)
+    // Cabeçalho do Relatório
     html += `<div style="position:relative;">
       <div class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</div>
       ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
     </div>`;
 
-    // Identificação da Inspeção[span_1](start_span)[span_1](end_span)
+    // Identificação da Inspeção
     html += `<div class="pr-section-title">IDENTIFICAÇÃO DA INSPEÇÃO</div>`;
     html += `<div class="pr-field-line">Empresa Responsável: <b>${esc(v('empresa'))}</b></div>`;
     html += `<div class="pr-field-pair">
