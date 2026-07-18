@@ -14,9 +14,10 @@ const UIRender = {
     
     container.innerHTML = ''; // Limpa antes de renderizar
 
-    sectionsArray.forEach(sec => {
+        sectionsArray.forEach(sec => {
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
+      sheet.id = `secao-${sec.n}`; // 🔥 ÂNCORA PARA O MENU RÁPIDO
       
       const head = document.createElement('div');
       head.className = 'sheet-head';
@@ -47,12 +48,18 @@ const UIRender = {
           </div>
           <div class="photo-cell" data-photo-item="${itemId}">
             <button type="button" class="photo-btn" title="Anexar foto">📷</button>
-            <input type="file" accept="image/*" capture="environment" style="display:none">
+            <!-- 🔥 TIREI O CAPTURE="ENVIRONMENT" PARA PERMITIR GALERIA E CÂMERA -->
+            <input type="file" accept="image/*" style="display:none">
             <div class="photo-thumb-wrap"></div>
           </div>
         `;
         body.appendChild(row);
       });
+      
+      sheet.appendChild(body);
+      container.appendChild(sheet);
+    });
+
       
       sheet.appendChild(body);
       container.appendChild(sheet);
