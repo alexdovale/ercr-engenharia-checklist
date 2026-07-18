@@ -5,22 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checklist de Inspeção e Perícia Técnica Veicular</title>
   
-  <!-- Fontes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Estilos -->
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/print.css" media="print">
   
-  <!-- SDKs do Firebase (Versão Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
   <style>
-    /* Estilos para os Alertas da API FIPE */
+    /* Estilos para os Alertas da API FIPE e Busca por Placa */
     #fipe-loading { display: none; background: #E3F2FD; color: #0D47A1; padding: 8px 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px; font-weight: 600; }
     #fipe-error { display: none; background: #FFEBEE; color: #B71C1C; padding: 8px 12px; margin-bottom: 15px; border-radius: 4px; font-size: 12px; font-weight: 600; }
     .fipe-sync-label { font-size: 10px; color: #1976D2; margin-top: 4px; font-weight: 600; }
@@ -29,10 +26,8 @@
 </head>
 <body>
 
-  <!-- Tela de Bloqueio (Login) -->
   <div id="screen-lock" style="display:none">
     <div class="lock-box">
-      <!-- LOGO ADICIONADA AQUI -->
       <img src="https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png" alt="ERCR Engenharia" style="max-width: 180px; margin-bottom: 20px;">
       
       <div class="lock-title">🔒 CHECKLIST DE INSPEÇÃO VEICULAR</div>
@@ -40,11 +35,9 @@
     </div>
   </div>
 
-  <!-- Tela de Listagem (Dashboard) -->
   <div id="screen-list" class="screen" style="display:none">
     <header class="dash">
       <div class="dash-top">
-        <!-- LOGO E TÍTULO ALINHADOS -->
         <div style="display: flex; align-items: center; gap: 15px;">
           <img src="https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png" alt="ERCR" style="height: 35px; object-fit: contain;">
           <div class="dash-title">SISTEMA DE INSPEÇÃO
@@ -62,11 +55,9 @@
     </main>
   </div>
 
-  <!-- Tela de Formulário (Checklist) -->
   <div id="screen-form" class="screen" style="display:none">
     <header class="dash">
       <div class="dash-top">
-        <!-- LOGO E TÍTULO ALINHADOS -->
         <div style="display: flex; align-items: center; gap: 15px;">
           <img src="https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png" alt="ERCR" style="height: 35px; object-fit: contain;">
           <div class="dash-title">CHECKLIST DE INSPEÇÃO
@@ -85,7 +76,6 @@
       <div class="dash-controls">
         <button class="btn-link" id="btn-back-list">← Voltar</button>
         
-        <!-- MENU DE NAVEGAÇÃO RÁPIDA -->
         <select id="quick-nav" style="margin-right: 8px; border-color: #2E7D32; background: #000; color: #fff; font-size: 11px; padding: 6px; border-radius: 4px;">
           <option value="">Ir para a seção...</option>
         </select>
@@ -102,7 +92,6 @@
     </header>
 
     <main>
-      <!-- Seção 0: Identificação da Inspeção -->
       <section class="sheet">
         <div class="sheet-head"><span class="n">·</span><h2>Identificação da Inspeção</h2><span class="seq-badge" id="seq-badge" style="display:none;"></span></div>
         <div class="sheet-body">
@@ -138,43 +127,41 @@
         </div>
       </section>
 
-      <!-- Seção 1: Identificação do Veículo (COM INTEGRAÇÃO FIPE) -->
       <section class="sheet">
         <div class="sheet-head"><span class="n">1</span><h2>Identificação do Veículo</h2></div>
         
         <div class="sheet-body">
-          <!-- Alertas Visuais da FIPE -->
           <div id="fipe-loading">⏳ Carregando...</div>
           <div id="fipe-error">❌ Erro na consulta.</div>
 
           <div class="field-grid">
-            <div class="field"><label>1.1 Placa</label><input type="text" id="placa" style="text-transform: uppercase;" placeholder="AAA0A00"></div>
+            <div class="field">
+              <label>1.1 Placa</label>
+              <div style="display: flex; gap: 5px;">
+                <input type="text" id="placa" style="text-transform: uppercase;" placeholder="AAA0A00" maxlength="7">
+                <button type="button" id="btn-buscar-placa" class="secondary" style="padding: 0 15px; border-radius: 4px; white-space: nowrap;">=== Buscar ===</button>
+              </div>
+            </div>
             
-            <!-- MARCA (FIPE) -->
             <div class="field">
               <label>1.2 Marca/Fabricante</label>
               <select id="fipe-marca"><option value="">Carregando...</option></select>
-              <!-- Campo original oculto para garantir compatibilidade com o Firebase e PDF -->
               <input type="text" id="marca" style="display:none;">
               <div id="display-marca" class="fipe-sync-label"></div>
             </div>
             
-            <!-- MODELO (FIPE) -->
             <div class="field">
               <label>1.3 Modelo</label>
               <select id="fipe-modelo" disabled><option value="">Aguardando Marca...</option></select>
-              <!-- Campo original oculto para garantir compatibilidade com o Firebase e PDF -->
               <input type="text" id="modelo" style="display:none;">
               <div id="display-modelo" class="fipe-sync-label"></div>
             </div>
             
-            <!-- ANO/VERSÃO (FIPE) -->
             <div class="field">
               <label>Versão FIPE (Para Preenchimento)</label>
               <select id="fipe-ano" disabled><option value="">Aguardando Modelo...</option></select>
             </div>
 
-            <!-- ANOS E COMBUSTÍVEL (Visíveis e Auto-Preenchidos) -->
             <div class="field"><label>1.4 Ano de Fabricação</label><input type="text" id="anoFab" placeholder="Ex: 2020" inputmode="numeric"></div>
             <div class="field"><label>1.5 Ano Modelo</label><input type="text" id="anoModelo" class="readonly-field" readonly placeholder="Automático (FIPE)"></div>
             <div class="field"><label>1.6 Número do Chassi</label><input type="text" id="chassi" style="text-transform: uppercase;"></div>
@@ -202,18 +189,14 @@
         </div>
       </section>
 
-      <!-- Contêiner Dinâmico para as seções 2 a 13 do Checklist -->
       <div id="sections-container"></div>
 
-      <!-- Seção 14: Registro de Não Conformidades -->
       <section class="sheet" id="secao-14">
         <div class="sheet-head"><span class="n">14</span><h2>Registro de Não Conformidades</h2></div>
         <div class="sheet-body" id="nc-container">
-          <!-- Gerado via script estático abaixo para facilitar -->
-        </div>
+          </div>
       </section>
 
-      <!-- Seção 15: Conclusão da Inspeção -->
       <section class="sheet" id="secao-15">
         <div class="sheet-head"><span class="n">15</span><h2>Conclusão da Inspeção</h2></div>
         <div class="sheet-body">
@@ -228,7 +211,6 @@
             <textarea id="consideracoes" rows="4"></textarea>
           </div>
 
-          <!-- SELETOR GERAL DE ASSINATURA -->
           <div class="field" style="grid-column:1/-1; margin-top: 24px; padding: 12px; background: #FAFAFA; border: 1px solid #E0E0E0; border-radius: 4px;">
             <label style="color:var(--ink);font-size:13px;font-weight:700;">Método de Assinatura do Relatório</label>
             <div class="sig-options" style="display:flex; gap:15px; margin-top: 8px;">
@@ -238,7 +220,6 @@
             </div>
           </div>
 
-          <!-- BLOCO: RESPONSÁVEL PELA INSPEÇÃO -->
           <div class="field-grid" style="margin-top:16px; padding-bottom: 16px; border-bottom: 1px dashed var(--paper-line);">
             <div class="field" style="grid-column:1/-1"><label style="color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0;font-weight:700;">Responsável pela Inspeção</label></div>
             
@@ -275,7 +256,6 @@
             <div class="field"><label>Data</label><input type="date" id="respInsData"></div>
           </div>
 
-          <!-- BLOCO: REPRESENTANTE DO CLIENTE -->
           <div class="field-grid" style="margin-top:16px;">
             <div class="field" style="grid-column:1/-1"><label style="color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0;font-weight:700;">Representante do Cliente</label></div>
             <div class="field"><label>Nome</label><input type="text" id="repCliNome"></div>
@@ -306,7 +286,6 @@
         </div>
       </section>
 
-      <!-- Nota Fiscal e Recibo -->
       <section class="sheet">
         <div class="sheet-head"><span class="n">$</span><h2>Nota Fiscal e Recibo (opcional)</h2></div>
         <div class="sheet-body">
@@ -324,7 +303,6 @@
       <div class="brand-footer">ERCR ENGENHARIA MECÂNICA · WWW.ERCRENGENHARIA.COM.BR</div>
     </main>
 
-    <!-- Rodapé de Ações -->
     <div class="actions">
       <button class="secondary" id="btn-clear">Limpar Campos</button>
       <button class="danger" id="btn-delete" style="display:none">Excluir Inspeção</button>
@@ -334,243 +312,10 @@
     </div>
   </div>
 
-  <!-- Contêiner de Impressão (invisível em tela, exibido no Ctrl+P) -->
   <div id="print-report"></div>
 
-  <!-- Script da Integração FIPE (Isolado e Seguro) -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const fipeMarca = document.getElementById('fipe-marca');
-      const fipeModelo = document.getElementById('fipe-modelo');
-      const fipeAno = document.getElementById('fipe-ano');
-      
-      const inputMarca = document.getElementById('marca');
-      const inputModelo = document.getElementById('modelo');
-      const inputAnoModelo = document.getElementById('anoModelo');
-      const inputCombustivel = document.getElementById('combustivel');
-      
-      const loadingIndicator = document.getElementById('fipe-loading');
-      const errorIndicator = document.getElementById('fipe-error');
-
-      // Funções de Interface
-      function mostrarLoading(msg) {
-        loadingIndicator.textContent = '⏳ ' + msg;
-        loadingIndicator.style.display = 'block';
-        errorIndicator.style.display = 'none';
-      }
-
-      function ocultarLoading() {
-        loadingIndicator.style.display = 'none';
-      }
-
-      function mostrarErro(msg) {
-        errorIndicator.textContent = '❌ ' + msg;
-        errorIndicator.style.display = 'block';
-        setTimeout(() => { errorIndicator.style.display = 'none'; }, 6000);
-      }
-
-      function limparModelo() {
-        fipeModelo.innerHTML = '<option value="">Aguardando Marca...</option>';
-        fipeModelo.disabled = true;
-        inputModelo.value = '';
-        limparAno();
-      }
-
-      function limparAno() {
-        fipeAno.innerHTML = '<option value="">Aguardando Modelo...</option>';
-        fipeAno.disabled = true;
-        inputAnoModelo.value = '';
-        inputCombustivel.value = '';
-      }
-
-      // Consulta Centralizada com Timeout e Cache de 24h
-      async function fetchFipeAPI(endpoint) {
-        const cacheKey = `fipe_${endpoint}`;
-        const cached = localStorage.getItem(cacheKey);
-
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            // Verifica se tem menos de 24 horas (86400000 ms)
-            if (Date.now() - parsed.timestamp < 86400000) {
-              return parsed.data;
-            } else {
-              localStorage.removeItem(cacheKey);
-            }
-          } catch(e) {}
-        }
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        try {
-          if (!navigator.onLine) throw new Error('Sem conexão com a internet.');
-
-          const response = await fetch(`https://parallelum.com.br/fipe/api/v1/carros${endpoint}`, { signal: controller.signal });
-          clearTimeout(timeoutId);
-
-          if (!response.ok) throw new Error('API indisponível no momento.');
-
-          const data = await response.json();
-          
-          // Salva no cache
-          localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
-          return data;
-
-        } catch (err) {
-          clearTimeout(timeoutId);
-          if (err.name === 'AbortError') throw new Error('Tempo de resposta esgotado (Timeout).');
-          throw err;
-        }
-      }
-
-      // 1. Carregar Marcas
-      async function carregarMarcas() {
-        try {
-          mostrarLoading('Carregando marcas na FIPE...');
-          const marcas = await fetchFipeAPI('/marcas');
-          fipeMarca.innerHTML = '<option value="">Selecione a Marca...</option>';
-          marcas.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.codigo;
-            opt.textContent = m.nome;
-            fipeMarca.appendChild(opt);
-          });
-        } catch (err) {
-          mostrarErro(`Erro ao carregar marcas: ${err.message}`);
-          fipeMarca.innerHTML = '<option value="">Falha ao carregar</option>';
-        } finally {
-          ocultarLoading();
-        }
-      }
-
-      // 2. Carregar Modelos
-      async function carregarModelos(codigoMarca) {
-        limparModelo();
-        try {
-          mostrarLoading('Carregando modelos na FIPE...');
-          const dados = await fetchFipeAPI(`/marcas/${codigoMarca}/modelos`);
-          fipeModelo.innerHTML = '<option value="">Selecione o Modelo...</option>';
-          fipeModelo.disabled = false;
-          
-          dados.modelos.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.codigo;
-            opt.textContent = m.nome;
-            fipeModelo.appendChild(opt);
-          });
-        } catch (err) {
-          mostrarErro(`Erro ao carregar modelos: ${err.message}`);
-          fipeModelo.innerHTML = '<option value="">Falha ao carregar</option>';
-        } finally {
-          ocultarLoading();
-        }
-      }
-
-      // 3. Carregar Anos
-      async function carregarAnos(codigoMarca, codigoModelo) {
-        limparAno();
-        try {
-          mostrarLoading('Carregando anos e versões...');
-          const anos = await fetchFipeAPI(`/marcas/${codigoMarca}/modelos/${codigoModelo}/anos`);
-          fipeAno.innerHTML = '<option value="">Selecione a Versão...</option>';
-          fipeAno.disabled = false;
-          
-          anos.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a.codigo;
-            opt.textContent = a.nome;
-            fipeAno.appendChild(opt);
-          });
-        } catch (err) {
-          mostrarErro(`Erro ao carregar versões: ${err.message}`);
-          fipeAno.innerHTML = '<option value="">Falha ao carregar</option>';
-        } finally {
-          ocultarLoading();
-        }
-      }
-
-      // 4. Carregar Detalhes Finais do Veículo
-      async function carregarDadosVeiculo(codigoMarca, codigoModelo, codigoAno) {
-        try {
-          mostrarLoading('Sincronizando dados do veículo...');
-          const dados = await fetchFipeAPI(`/marcas/${codigoMarca}/modelos/${codigoModelo}/anos/${codigoAno}`);
-
-          // Preenche os inputs originais que serão coletados pelo Firebase
-          if (dados.Marca) inputMarca.value = dados.Marca;
-          if (dados.Modelo) inputModelo.value = dados.Modelo;
-          if (dados.AnoModelo) inputAnoModelo.value = dados.AnoModelo;
-          if (dados.Combustivel) inputCombustivel.value = dados.Combustivel;
-
-          mostrarLoading('Veículo sincronizado com sucesso!');
-          setTimeout(() => ocultarLoading(), 2000);
-
-        } catch (err) {
-          mostrarErro(`Erro ao buscar detalhes: ${err.message}`);
-        } finally {
-          if (loadingIndicator.textContent.includes('Sincronizando')) ocultarLoading();
-        }
-      }
-
-      // Escutadores de Evento
-      fipeMarca.addEventListener('change', (e) => {
-        const codigo = e.target.value;
-        if (!codigo) {
-          inputMarca.value = '';
-          limparModelo();
-          return;
-        }
-        inputMarca.value = e.target.options[e.target.selectedIndex].text;
-        carregarModelos(codigo);
-      });
-
-      fipeModelo.addEventListener('change', (e) => {
-        const codigo = e.target.value;
-        if (!codigo) {
-          inputModelo.value = '';
-          limparAno();
-          return;
-        }
-        inputModelo.value = e.target.options[e.target.selectedIndex].text;
-        carregarAnos(fipeMarca.value, codigo);
-      });
-
-      fipeAno.addEventListener('change', (e) => {
-        const codigo = e.target.value;
-        if (!codigo) {
-          inputAnoModelo.value = '';
-          inputCombustivel.value = '';
-          return;
-        }
-        carregarDadosVeiculo(fipeMarca.value, fipeModelo.value, codigo);
-      });
-
-      // Sincronizador Visual Contínuo: Mostra qual veículo está carregado no Firebase
-      // (Útil para quando o usuário abre uma inspeção já salva)
-      setInterval(() => {
-        const dispMarca = document.getElementById('display-marca');
-        const dispModelo = document.getElementById('display-modelo');
-        
-        if (dispMarca && inputMarca.value) {
-          dispMarca.textContent = 'Salvo: ' + inputMarca.value;
-        } else if (dispMarca) {
-          dispMarca.textContent = '';
-        }
-        
-        if (dispModelo && inputModelo.value) {
-          dispModelo.textContent = 'Salvo: ' + inputModelo.value;
-        } else if (dispModelo) {
-          dispModelo.textContent = '';
-        }
-      }, 1000);
-
-      // Inicia automaticamente
-      carregarMarcas();
-    });
-  </script>
-
-  <!-- Demais Scripts da Aplicação Original -->
   <script defer>
+    // 1. GERAÇÃO DINÂMICA DOS CORDÕES DE NÃO CONFORMIDADES (SEÇÃO 14)
     const ncContainer = document.getElementById('nc-container');
     if (ncContainer) {
       for (let i = 1; i <= 3; i++) {
@@ -604,6 +349,7 @@
       }
     }
 
+    // 2. AUTOCOMPLEMENTO DO CREA COM BASE NO INSPETOR SELECIONADO
     const bancoInspetores = {
       "Alex do Vale Rosa Santos Nepomuceno Silva": "RJ-000000/D",
       "Engenheiro Exemplo 2": "RJ-111111/D"
@@ -618,6 +364,278 @@
           const nomeDigitado = e.target.value;
           if(bancoInspetores[nomeDigitado]) {
             inputCrea.value = bancoInspetores[nomeDigitado]; 
+          }
+        });
+      }
+    });
+
+    // 3. INTEGRAÇÃO COMPLETA DA API FIPE COM CACHE E TRATAMENTO DE ERROS
+    document.addEventListener('DOMContentLoaded', () => {
+      const fipeMarca = document.getElementById('fipe-marca');
+      const fipeModelo = document.getElementById('fipe-modelo');
+      const fipeAno = document.getElementById('fipe-ano');
+      
+      const inputMarca = document.getElementById('marca');
+      const inputModelo = document.getElementById('modelo');
+      const inputAnoModelo = document.getElementById('anoModelo');
+      const inputCombustivel = document.getElementById('combustivel');
+      
+      const loadingIndicator = document.getElementById('fipe-loading');
+      const errorIndicator = document.getElementById('fipe-error');
+
+      function mostrarLoading(msg) {
+        loadingIndicator.textContent = '⏳ ' + msg;
+        loadingIndicator.style.display = 'block';
+        errorIndicator.style.display = 'none';
+      }
+
+      function ocultarLoading() {
+        loadingIndicator.style.display = 'none';
+      }
+
+      function mostrarErro(msg) {
+        errorIndicator.textContent = '❌ ' + msg;
+        errorIndicator.style.display = 'block';
+        setTimeout(() => { errorIndicator.style.display = 'none'; }, 6000);
+      }
+
+      function limparModelo() {
+        fipeModelo.innerHTML = '<option value="">Aguardando Marca...</option>';
+        fipeModelo.disabled = true;
+        inputModelo.value = '';
+        limparAno();
+      }
+
+      function limparAno() {
+        fipeAno.innerHTML = '<option value="">Aguardando Modelo...</option>';
+        fipeAno.disabled = true;
+        inputAnoModelo.value = '';
+        inputCombustivel.value = '';
+      }
+
+      async function fetchFipeAPI(endpoint) {
+        const cacheKey = `fipe_${endpoint}`;
+        const cached = localStorage.getItem(cacheKey);
+
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.timestamp < 86400000) { // Cache de 24 horas
+              return parsed.data;
+            } else {
+              localStorage.removeItem(cacheKey);
+            }
+          } catch(e) {}
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        try {
+          if (!navigator.onLine) throw new Error('Sem conexão com a internet.');
+
+          const response = await fetch(`https://parallelum.com.br/fipe/api/v1/carros${endpoint}`, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) throw new Error('API FIPE indisponível no momento.');
+
+          const data = await response.json();
+          localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+          return data;
+
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') throw new Error('Tempo esgotado (Timeout FIPE).');
+          throw err;
+        }
+      }
+
+      async function carregarMarcas() {
+        try {
+          mostrarLoading('Carregando marcas na FIPE...');
+          const marcas = await fetchFipeAPI('/marcas');
+          fipeMarca.innerHTML = '<option value="">Selecione a Marca...</option>';
+          marcas.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.codigo;
+            opt.textContent = m.nome;
+            fipeMarca.appendChild(opt);
+          });
+        } catch (err) {
+          mostrarErro(`Erro marcas: ${err.message}`);
+          fipeMarca.innerHTML = '<option value="">Falha ao carregar</option>';
+        } finally {
+          ocultarLoading();
+        }
+      }
+
+      async function carregarModelos(codigoMarca) {
+        limparModelo();
+        try {
+          mostrarLoading('Carregando modelos na FIPE...');
+          const dados = await fetchFipeAPI(`/marcas/${codigoMarca}/modelos`);
+          fipeModelo.innerHTML = '<option value="">Selecione o Modelo...</option>';
+          fipeModelo.disabled = false;
+          
+          dados.modelos.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.codigo;
+            opt.textContent = m.nome;
+            fipeModelo.appendChild(opt);
+          });
+        } catch (err) {
+          mostrarErro(`Erro modelos: ${err.message}`);
+          fipeModelo.innerHTML = '<option value="">Falha ao carregar</option>';
+        } finally {
+          ocultarLoading();
+        }
+      }
+
+      async function carregarAnos(codigoMarca, codigoModelo) {
+        limparAno();
+        try {
+          mostrarLoading('Carregando anos e versões...');
+          const anos = await fetchFipeAPI(`/marcas/${codigoMarca}/modelos/${codigoModelo}/anos`);
+          fipeAno.innerHTML = '<option value="">Selecione a Versão...</option>';
+          fipeAno.disabled = false;
+          
+          anos.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a.codigo;
+            opt.textContent = a.nome;
+            fipeAno.appendChild(opt);
+          });
+        } catch (err) {
+          mostrarErro(`Erro versões: ${err.message}`);
+          fipeAno.innerHTML = '<option value="">Falha ao carregar</option>';
+        } finally {
+          ocultarLoading();
+        }
+      }
+
+      async function carregarDadosVeiculo(codigoMarca, codigoModelo, codigoAno) {
+        try {
+          mostrarLoading('Sincronizando dados do veículo...');
+          const dados = await fetchFipeAPI(`/marcas/${codigoMarca}/modelos/${codigoModelo}/anos/${codigoAno}`);
+
+          if (dados.Marca) inputMarca.value = dados.Marca;
+          if (dados.Modelo) inputModelo.value = dados.Modelo;
+          if (dados.AnoModelo) inputAnoModelo.value = dados.AnoModelo;
+          if (dados.Combustivel) inputCombustivel.value = dados.Combustivel;
+
+          mostrarLoading('Veículo sincronizado!');
+          setTimeout(() => ocultarLoading(), 2000);
+
+        } catch (err) {
+          mostrarErro(`Erro detalhes: ${err.message}`);
+        } finally {
+          if (loadingIndicator.textContent.includes('Sincronizando')) ocultarLoading();
+        }
+      }
+
+      fipeMarca.addEventListener('change', (e) => {
+        const codigo = e.target.value;
+        if (!codigo) { inputMarca.value = ''; limparModelo(); return; }
+        inputMarca.value = e.target.options[e.target.selectedIndex].text;
+        carregarModelos(codigo);
+      });
+
+      fipeModelo.addEventListener('change', (e) => {
+        const codigo = e.target.value;
+        if (!codigo) { inputModelo.value = ''; limparAno(); return; }
+        inputModelo.value = e.target.options[e.target.selectedIndex].text;
+        carregarAnos(fipeMarca.value, codigo);
+      });
+
+      fipeAno.addEventListener('change', (e) => {
+        const codigo = e.target.value;
+        if (!codigo) { inputAnoModelo.value = ''; inputCombustivel.value = ''; return; }
+        carregarDadosVeiculo(fipeMarca.value, fipeModelo.value, codigo);
+      });
+
+      // Sincronizador Visual Contínuo para itens vindos do Firebase
+      setInterval(() => {
+        const dispMarca = document.getElementById('display-marca');
+        const dispModelo = document.getElementById('display-modelo');
+        if (dispMarca) dispMarca.textContent = inputMarca.value ? 'Atual: ' + inputMarca.value : '';
+        if (dispModelo) dispModelo.textContent = inputModelo.value ? 'Atual: ' + inputModelo.value : '';
+      }, 1000);
+
+      carregarMarcas();
+    });
+
+    // 4. MÓDULO HÍBRIDO DE BUSCA POR PLACA (RETORNO DE ATRIBUTOS BÁSICOS)
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnBuscarPlaca = document.getElementById('btn-buscar-placa');
+      const inputPlaca = document.getElementById('placa');
+      
+      if(btnBuscarPlaca && inputPlaca) {
+        btnBuscarPlaca.addEventListener('click', async () => {
+          const placa = inputPlaca.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+          
+          if (placa.length !== 7) {
+            alert('⚠️ Digite uma placa válida com 7 dígitos (Modelo Mercosul ou Antigo).');
+            return;
+          }
+
+          const btnOriginalText = btnBuscarPlaca.textContent;
+          btnBuscarPlaca.textContent = '⏳...';
+          btnBuscarPlaca.disabled = true;
+
+          try {
+            // Conta gratuita em provedor homologado (Ex: WDAPI ou Invertexto)
+            const tokenPlaca = 'SEU_TOKEN_GRATUITO_AQUI'; 
+            
+            // Exemplo estrutural de requisição híbrida:
+            // const res = await fetch(`https://wdapi2.com.br/consulta/${placa}?token=${tokenPlaca}`);
+            // const dados = await res.json();
+
+            // -------------------------------------------------------------
+            // RESPOSTA HÍBRIDA SIMULADA DE ACORDO COM REGRAS PRIVADAS
+            const dados = {
+               sucesso: true,
+               marca: "HYUNDAI",
+               modelo: "HB20 1.6 COMFORT",
+               ano: "2014",
+               anoModelo: "2015",
+               cor: "Prata",
+               municipio: "Duque de Caxias/RJ"
+            };
+            // -------------------------------------------------------------
+
+            if (dados && dados.sucesso !== false) {
+              
+              if (dados.cor) {
+                const corSelect = document.getElementById('cor');
+                const option = Array.from(corSelect.options).find(opt => opt.value.toUpperCase() === dados.cor.toUpperCase());
+                if (option) corSelect.value = option.value;
+              }
+
+              if (dados.ano) document.getElementById('anoFab').value = dados.ano;
+              if (dados.anoModelo) document.getElementById('anoModelo').value = dados.anoModelo;
+              if (dados.municipio) document.getElementById('municipio').value = dados.municipio;
+
+              if (dados.marca) {
+                document.getElementById('marca').value = dados.marca;
+              }
+              if (dados.modelo) {
+                document.getElementById('modelo').value = dados.modelo;
+              }
+
+              // Injeta sinalizadores em laranja nos campos sensíveis para vistoria física
+              document.getElementById('chassi').style.border = "2px solid #FF9800";
+              document.getElementById('numMotor').style.border = "2px solid #FF9800";
+
+            } else {
+              alert('❌ Placa não localizada ou limite do plano grátis atingido.');
+            }
+
+          } catch (err) {
+            console.error(err);
+            alert('⚠️ Indisponibilidade temporária na rede de placas.');
+          } finally {
+            btnBuscarPlaca.textContent = btnOriginalText;
+            btnBuscarPlaca.disabled = false;
           }
         });
       }
