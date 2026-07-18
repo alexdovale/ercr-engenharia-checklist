@@ -95,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 6. Lógica de Checklist e Fotos
-  // Captura cliques nos botões de foto e o envio do arquivo
   sectionsContainer.addEventListener('click', (e) => {
     // Opções
     const opt = e.target.closest('.opt');
@@ -109,15 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Botão de Foto
     if (e.target.classList.contains('photo-btn')) {
-      // Dispara o input de arquivo oculto ao lado do botão
       e.target.nextElementSibling.click();
     }
   });
 
-  // Evento de mudança para upload de fotos
   sectionsContainer.addEventListener('change', async (e) => {
     if (e.target.type === 'file' && e.target.files.length > 0) {
-      // Verifica se a inspeção foi salva
       if (!currentRecordId) {
         alert("Salve a inspeção antes de anexar fotos.");
         e.target.value = '';
@@ -132,10 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       thumbWrap.innerHTML = 'Carregando...';
 
       try {
-        // Usa o StorageService para processar e subir a imagem
         const url = await StorageService.uploadPhoto(currentRecordId, itemId, file);
-        
-        // Atualiza o estado local e a interface
         photoUrls[itemId] = url;
         thumbWrap.innerHTML = `
           <div class="photo-thumb">
@@ -143,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="photo-remove" data-item="${itemId}">x</button>
           </div>`;
         
-        // Adiciona evento para remover a foto
         const removeBtn = thumbWrap.querySelector('.photo-remove');
         if (removeBtn) {
           removeBtn.addEventListener('click', (e) => {
@@ -190,11 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[type=radio]:checked').forEach(r => { 
       state.radios[r.name] = r.value; 
     });
-    state.signatures = {
-      methodUsed: signatureManager.currentMethod,
-      respIns: await signatureManager.collectSignature('respIns'),
-      repCli: await signatureManager.collectSignature('repCli')
-    };
+    
+    // Tratativa para coletar assinaturas com segurança
+    if (typeof signatureManager !== 'undefined') {
+      state.signatures = {
+        methodUsed: signatureManager.currentMethod,
+        respIns: await signatureManager.collectSignature('respIns'),
+        repCli: await signatureManager.collectSignature('repCli')
+      };
+    }
     return state;
   }
 
@@ -221,7 +217,100 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("Erro: " + err.message);
     }
   });
+  
+  /**
+   * ==========================================
+   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX
+   * ==========================================
+   */
 
+  // 1. LIMPAR ASSINATURAS (Desenho e Texto)
+  document.querySelectorAll('.sig-clear').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetId = e.target.dataset.target; // ex: sig-respIns
+      const role = e.target.dataset.role;       // ex: respIns
+      
+      // Limpa o Canvas
+      const canvas = document.getElementById(targetId);
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      // Limpa o campo de texto digitado
+      const inputTexto = document.getElementById(role + 'Assinatura');
+      if (inputTexto) inputTexto.value = '';
+    });
+  });
+
+  // 2. GERAR RECIBO
+  const btnReceipt = document.getElementById('btn-receipt');
+  if (btnReceipt) {
+    btnReceipt.addEventListener('click', () => {
+      const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+      const cnpj = document.getElementById('cnpj').value || '00.000.000/0000-00';
+      
+      UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
+      window.print();
+    });
+  }
+
+  // 3. MENU DE NAVEGAÇÃO RÁPIDA (Alimenta o Select com as Seções)
+  const navMenu = document.getElementById('quick-nav');
+  if (navMenu && typeof SECTIONS !== 'undefined') {
+    SECTIONS.forEach(sec => {
+      navMenu.innerHTML += `<option value="secao-${sec.n}">${sec.n}. ${sec.title}</option>`;
+    });
+
+    navMenu.addEventListener('change', (e) => {
+      if (!e.target.value) return;
+      const secaoAlvo = document.getElementById(e.target.value);
+      if (secaoAlvo) {
+        // Rola até a seção e dá um "desconto" de 140px por causa do cabeçalho fixo
+        const y = secaoAlvo.getBoundingClientRect().top + window.scrollY - 140;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+      e.target.value = ''; // Reseta após a seleção
+    });
+  }
+
+  // 4. BOTÃO ÍMÃ: ENCONTRAR PENDENTES
+  const gaugePendente = document.querySelector('.gauge.pend');
+  if (gaugePendente) {
+    gaugePendente.style.cursor = 'pointer';
+    gaugePendente.addEventListener('click', () => {
+      const rows = document.querySelectorAll('.item-row');
+      const pendentes = [];
+      
+      rows.forEach(row => {
+        const opts = row.querySelector('.opts');
+        if (opts && !opts.querySelector('input:checked')) {
+          pendentes.push(row);
+        }
+      });
+
+      if (pendentes.length === 0) {
+        alert("Parabéns! Não há itens pendentes nesta inspeção.");
+        return;
+      }
+
+      // Vai para a primeira linha pendente encontrada
+      const alvo = pendentes[0];
+      const y = alvo.getBoundingClientRect().top + window.scrollY - 180;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      
+      // Efeito visual de piscar a linha em vermelho
+      alvo.style.transition = 'background-color 0.3s';
+      alvo.style.backgroundColor = '#FFEBEE';
+      setTimeout(() => { alvo.style.backgroundColor = 'transparent'; }, 1500);
+    });
+  }
+
+  /**
+   * ==========================================
+   * FUNÇÕES AUXILIARES DE ESTADO (UI)
+   * ==========================================
+   */
   function clearFormUI() {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
@@ -229,8 +318,12 @@ document.addEventListener('DOMContentLoaded', () => {
     photoUrls = {}; 
     currentSeq = null; 
     updateGauges();
-    canvasProvider.clear('respIns'); 
-    canvasProvider.clear('repCli');
+    
+    // Tratativa para limpar Canvas com segurança
+    if (typeof canvasProvider !== 'undefined') {
+      canvasProvider.clear('respIns'); 
+      canvasProvider.clear('repCli');
+    }
   }
 
   async function loadRecord(id) {
@@ -257,4 +350,5 @@ document.addEventListener('DOMContentLoaded', () => {
     screenForm.style.display = '';
     updateGauges();
   }
+
 });
