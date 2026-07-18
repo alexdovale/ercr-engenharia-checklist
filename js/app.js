@@ -94,9 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 6. Lógica de Checklist e Fotos
-  sectionsContainer.addEventListener('click', (e) => {
-    // Opções
+  // 6. Lógica de Checklist e Fotos (Global para todo o formulário)
+  screenForm.addEventListener('click', (e) => {
+    
+    // 6.1. Opções das seções de 2 a 13 (Conforme / Não Conforme)
     const opt = e.target.closest('.opt');
     if (opt) {
       const group = opt.closest('.opts');
@@ -105,17 +106,44 @@ document.addEventListener('DOMContentLoaded', () => {
       opt.querySelector('input').checked = true;
       updateGauges();
     }
+
+    // 6.2. Opções da Seção 14 (Criticidade: Baixa, Média, Alta)
+    const crit = e.target.closest('.crit');
+    if (crit) {
+      const group = crit.closest('.crit-opts');
+      group.querySelectorAll('.crit').forEach(o => o.classList.remove('sel'));
+      crit.classList.add('sel');
+      crit.querySelector('input').checked = true;
+    }
+
+    // 6.3. Opções da Seção 15 (Classificação Final)
+    const classOpt = e.target.closest('.class-opt');
+    if (classOpt) {
+      const group = classOpt.closest('.class-opts');
+      // Limpa seleções anteriores
+      group.querySelectorAll('.class-opt').forEach(o => {
+        o.classList.remove('sel-apto', 'sel-restr', 'sel-inapto');
+      });
+      // Aplica a cor certa de acordo com a escolha
+      const val = classOpt.dataset.val;
+      if (val === 'apto') classOpt.classList.add('sel-apto');
+      if (val === 'restricoes') classOpt.classList.add('sel-restr');
+      if (val === 'inapto') classOpt.classList.add('sel-inapto');
+      
+      classOpt.querySelector('input').checked = true;
+    }
     
-    // Botão de Foto
+    // 6.4. Botão de Foto (agora funciona em todas as seções)
     if (e.target.classList.contains('photo-btn')) {
       e.target.nextElementSibling.click();
     }
   });
 
-  sectionsContainer.addEventListener('change', async (e) => {
+  // Evento global para upload de fotos em qualquer lugar do formulário
+  screenForm.addEventListener('change', async (e) => {
     if (e.target.type === 'file' && e.target.files.length > 0) {
       if (!currentRecordId) {
-        alert("Salve a inspeção antes de anexar fotos.");
+        alert("Salve a inspeção em 'Rascunho' antes de anexar fotos para criar o banco de imagens.");
         e.target.value = '';
         return;
       }
@@ -138,8 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const removeBtn = thumbWrap.querySelector('.photo-remove');
         if (removeBtn) {
-          removeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+          removeBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
             delete photoUrls[itemId];
             thumbWrap.innerHTML = '';
           });
@@ -227,17 +255,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. LIMPAR ASSINATURAS (Desenho e Texto)
   document.querySelectorAll('.sig-clear').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const targetId = e.target.dataset.target; // ex: sig-respIns
-      const role = e.target.dataset.role;       // ex: respIns
+      const targetId = e.target.dataset.target; 
+      const role = e.target.dataset.role;       
       
-      // Limpa o Canvas
       const canvas = document.getElementById(targetId);
       if (canvas) {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
       
-      // Limpa o campo de texto digitado
       const inputTexto = document.getElementById(role + 'Assinatura');
       if (inputTexto) inputTexto.value = '';
     });
@@ -266,11 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!e.target.value) return;
       const secaoAlvo = document.getElementById(e.target.value);
       if (secaoAlvo) {
-        // Rola até a seção e dá um "desconto" de 140px por causa do cabeçalho fixo
         const y = secaoAlvo.getBoundingClientRect().top + window.scrollY - 140;
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
-      e.target.value = ''; // Reseta após a seleção
+      e.target.value = ''; 
     });
   }
 
@@ -294,12 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Vai para a primeira linha pendente encontrada
       const alvo = pendentes[0];
       const y = alvo.getBoundingClientRect().top + window.scrollY - 180;
       window.scrollTo({ top: y, behavior: 'smooth' });
       
-      // Efeito visual de piscar a linha em vermelho
       alvo.style.transition = 'background-color 0.3s';
       alvo.style.backgroundColor = '#FFEBEE';
       setTimeout(() => { alvo.style.backgroundColor = 'transparent'; }, 1500);
@@ -314,12 +337,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function clearFormUI() {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
-    document.querySelectorAll('.opt').forEach(el => el.classList.remove('sel'));
+    
+    // Limpa a cor de todas as opções (de todas as seções)
+    document.querySelectorAll('.opt, .crit').forEach(el => el.classList.remove('sel'));
+    document.querySelectorAll('.class-opt').forEach(el => el.classList.remove('sel-apto', 'sel-restr', 'sel-inapto'));
+    
     photoUrls = {}; 
     currentSeq = null; 
     updateGauges();
     
-    // Tratativa para limpar Canvas com segurança
     if (typeof canvasProvider !== 'undefined') {
       canvasProvider.clear('respIns'); 
       canvasProvider.clear('repCli');
@@ -335,13 +361,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(key); 
       if (el) el.value = val; 
     });
+    
     Object.entries(state.radios || {}).forEach(([name, val]) => {
       const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
       if (input) { 
         input.checked = true; 
-        input.closest('label').classList.add('sel'); 
+        const label = input.closest('label');
+        
+        // Reconstrói a seleção visual dependendo de qual seção for
+        if (label.classList.contains('opt') || label.classList.contains('crit')) {
+          label.classList.add('sel'); 
+        } else if (label.classList.contains('class-opt')) {
+          if (val === 'apto') label.classList.add('sel-apto');
+          if (val === 'restricoes') label.classList.add('sel-restr');
+          if (val === 'inapto') label.classList.add('sel-inapto');
+        }
       }
     });
+
     document.getElementById('status-select').value = state.status || 'rascunho';
     photoUrls = state.photoUrls || {};
     currentSeq = state.seq || null;
