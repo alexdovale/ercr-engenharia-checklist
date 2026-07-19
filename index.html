@@ -92,7 +92,7 @@
     </header>
 
     <main>
-      <section class="sheet">
+      <section class="sheet" id="secao-0">
         <div class="sheet-head"><span class="n">·</span><h2>Identificação da Inspeção</h2><span class="seq-badge" id="seq-badge" style="display:none;"></span></div>
         <div class="sheet-body">
           <div class="field-grid">
@@ -127,7 +127,7 @@
         </div>
       </section>
 
-      <section class="sheet">
+      <section class="sheet" id="secao-1">
         <div class="sheet-head"><span class="n">1</span><h2>Identificação do Veículo</h2></div>
         
         <div class="sheet-body">
@@ -139,7 +139,7 @@
               <label>1.1 Placa</label>
               <div style="display: flex; gap: 5px;">
                 <input type="text" id="placa" style="text-transform: uppercase;" placeholder="AAA0A00" maxlength="7">
-                <button type="button" id="btn-buscar-placa" class="secondary" style="padding: 0 15px; border-radius: 4px; white-space: nowrap;">=== Buscar ===</button>
+                <button type="button" id="btn-buscar-placa" class="secondary" style="padding: 0 15px; border-radius: 4px; white-space: nowrap;">🔍 Buscar</button>
               </div>
             </div>
             
@@ -315,7 +315,6 @@
   <div id="print-report"></div>
 
   <script defer>
-    // 1. GERAÇÃO DINÂMICA DOS CORDÕES DE NÃO CONFORMIDADES (SEÇÃO 14)
     const ncContainer = document.getElementById('nc-container');
     if (ncContainer) {
       for (let i = 1; i <= 3; i++) {
@@ -349,7 +348,6 @@
       }
     }
 
-    // 2. AUTOCOMPLEMENTO DO CREA COM BASE NO INSPETOR SELECIONADO
     const bancoInspetores = {
       "Alex do Vale Rosa Santos Nepomuceno Silva": "RJ-000000/D",
       "Engenheiro Exemplo 2": "RJ-111111/D"
@@ -369,7 +367,6 @@
       }
     });
 
-    // 3. INTEGRAÇÃO COMPLETA DA API FIPE COM CACHE E TRATAMENTO DE ERROS
     document.addEventListener('DOMContentLoaded', () => {
       const fipeMarca = document.getElementById('fipe-marca');
       const fipeModelo = document.getElementById('fipe-modelo');
@@ -420,7 +417,7 @@
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
-            if (Date.now() - parsed.timestamp < 86400000) { // Cache de 24 horas
+            if (Date.now() - parsed.timestamp < 86400000) {
               return parsed.data;
             } else {
               localStorage.removeItem(cacheKey);
@@ -553,7 +550,6 @@
         carregarDadosVeiculo(fipeMarca.value, fipeModelo.value, codigo);
       });
 
-      // Sincronizador Visual Contínuo para itens vindos do Firebase
       setInterval(() => {
         const dispMarca = document.getElementById('display-marca');
         const dispModelo = document.getElementById('display-modelo');
@@ -564,7 +560,6 @@
       carregarMarcas();
     });
 
-    // 4. MÓDULO HÍBRIDO DE BUSCA POR PLACA (RETORNO DE ATRIBUTOS BÁSICOS)
     document.addEventListener('DOMContentLoaded', () => {
       const btnBuscarPlaca = document.getElementById('btn-buscar-placa');
       const inputPlaca = document.getElementById('placa');
@@ -574,7 +569,7 @@
           const placa = inputPlaca.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
           
           if (placa.length !== 7) {
-            alert('⚠️ Digite uma placa válida com 7 dígitos (Modelo Mercosul ou Antigo).');
+            alert('⚠️ Digite uma placa válida com 7 dígitos.');
             return;
           }
 
@@ -583,15 +578,8 @@
           btnBuscarPlaca.disabled = true;
 
           try {
-            // Conta gratuita em provedor homologado (Ex: WDAPI ou Invertexto)
             const tokenPlaca = 'SEU_TOKEN_GRATUITO_AQUI'; 
             
-            // Exemplo estrutural de requisição híbrida:
-            // const res = await fetch(`https://wdapi2.com.br/consulta/${placa}?token=${tokenPlaca}`);
-            // const dados = await res.json();
-
-            // -------------------------------------------------------------
-            // RESPOSTA HÍBRIDA SIMULADA DE ACORDO COM REGRAS PRIVADAS
             const dados = {
                sucesso: true,
                marca: "HYUNDAI",
@@ -601,10 +589,8 @@
                cor: "Prata",
                municipio: "Duque de Caxias/RJ"
             };
-            // -------------------------------------------------------------
 
             if (dados && dados.sucesso !== false) {
-              
               if (dados.cor) {
                 const corSelect = document.getElementById('cor');
                 const option = Array.from(corSelect.options).find(opt => opt.value.toUpperCase() === dados.cor.toUpperCase());
@@ -615,24 +601,17 @@
               if (dados.anoModelo) document.getElementById('anoModelo').value = dados.anoModelo;
               if (dados.municipio) document.getElementById('municipio').value = dados.municipio;
 
-              if (dados.marca) {
-                document.getElementById('marca').value = dados.marca;
-              }
-              if (dados.modelo) {
-                document.getElementById('modelo').value = dados.modelo;
-              }
+              if (dados.marca) document.getElementById('marca').value = dados.marca;
+              if (dados.modelo) document.getElementById('modelo').value = dados.modelo;
 
-              // Injeta sinalizadores em laranja nos campos sensíveis para vistoria física
               document.getElementById('chassi').style.border = "2px solid #FF9800";
               document.getElementById('numMotor').style.border = "2px solid #FF9800";
-
             } else {
-              alert('❌ Placa não localizada ou limite do plano grátis atingido.');
+              alert('❌ Placa não localizada ou limite atingido.');
             }
-
           } catch (err) {
             console.error(err);
-            alert('⚠️ Indisponibilidade temporária na rede de placas.');
+            alert('⚠️ Falha de comunicação.');
           } finally {
             btnBuscarPlaca.textContent = btnOriginalText;
             btnBuscarPlaca.disabled = false;
