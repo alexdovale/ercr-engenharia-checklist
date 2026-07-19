@@ -1,6 +1,6 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Final
+ * Arquivo Principal (Orquestrador) - Versão Final Consolidada
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -96,51 +96,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Lógica de Checklist e Fotos (Global para todo o formulário)
   screenForm.addEventListener('click', (e) => {
-    
-    // 6.1. Opções das seções de 2 a 13 (Conforme / Não Conforme)
-    const opt = e.target.closest('.opt');
-    if (opt) {
-      const group = opt.closest('.opts');
-      group.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
-      opt.classList.add('sel');
-      opt.querySelector('input').checked = true;
-      updateGauges();
-    }
-
-    // 6.2. Opções da Seção 14 (Criticidade: Baixa, Média, Alta)
-    const crit = e.target.closest('.crit');
-    if (crit) {
-      const group = crit.closest('.crit-opts');
-      group.querySelectorAll('.crit').forEach(o => o.classList.remove('sel'));
-      crit.classList.add('sel');
-      crit.querySelector('input').checked = true;
-    }
-
-    // 6.3. Opções da Seção 15 (Classificação Final)
-    const classOpt = e.target.closest('.class-opt');
-    if (classOpt) {
-      const group = classOpt.closest('.class-opts');
-      // Limpa seleções anteriores
-      group.querySelectorAll('.class-opt').forEach(o => {
-        o.classList.remove('sel-apto', 'sel-restr', 'sel-inapto');
-      });
-      // Aplica a cor certa de acordo com a escolha
-      const val = classOpt.dataset.val;
-      if (val === 'apto') classOpt.classList.add('sel-apto');
-      if (val === 'restricoes') classOpt.classList.add('sel-restr');
-      if (val === 'inapto') classOpt.classList.add('sel-inapto');
-      
-      classOpt.querySelector('input').checked = true;
-    }
-    
-    // 6.4. Botão de Foto (agora funciona em todas as seções)
     if (e.target.classList.contains('photo-btn')) {
       e.target.nextElementSibling.click();
     }
   });
 
-  // Evento global para upload de fotos em qualquer lugar do formulário
   screenForm.addEventListener('change', async (e) => {
+    // 6.1 Tratativa dos Botões de Seleção (Seções 2 a 15)
+    if (e.target.type === 'radio') {
+      const name = e.target.name;
+      const group = document.querySelectorAll(`input[name="${name}"]`);
+      
+      group.forEach(input => {
+        const label = input.closest('label');
+        if (label) {
+          label.classList.remove('sel', 'sel-apto', 'sel-restr', 'sel-inapto');
+        }
+      });
+
+      const selectedLabel = e.target.closest('label');
+      if (selectedLabel) {
+        if (selectedLabel.classList.contains('opt') || selectedLabel.classList.contains('crit')) {
+          selectedLabel.classList.add('sel');
+        } else if (selectedLabel.classList.contains('class-opt')) {
+          const val = e.target.value;
+          if (val === 'apto') selectedLabel.classList.add('sel-apto');
+          if (val === 'restricoes') selectedLabel.classList.add('sel-restr');
+          if (val === 'inapto') selectedLabel.classList.add('sel-inapto');
+        }
+      }
+
+      if (selectedLabel && selectedLabel.classList.contains('opt')) {
+        updateGauges();
+      }
+    }
+
+    // 6.2 Tratativa de Upload de Imagens
     if (e.target.type === 'file' && e.target.files.length > 0) {
       if (!currentRecordId) {
         alert("Salve a inspeção em 'Rascunho' antes de anexar fotos para criar o banco de imagens.");
@@ -211,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
       state.radios[r.name] = r.value; 
     });
     
-    // Tratativa para coletar assinaturas com segurança
     if (typeof signatureManager !== 'undefined') {
       state.signatures = {
         methodUsed: signatureManager.currentMethod,
@@ -248,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   /**
    * ==========================================
-   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX
+   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX (MÓDULO SEQUENCIAL CORRIGIDO)
    * ==========================================
    */
 
@@ -281,12 +271,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. MENU DE NAVEGAÇÃO RÁPIDA (Alimenta o Select com as Seções)
+  // 3. CONSTRUTOR DO MENU DE NAVEGAÇÃO (0 ATÉ 15 EM ORDEM)
   const navMenu = document.getElementById('quick-nav');
   if (navMenu && typeof SECTIONS !== 'undefined') {
+    navMenu.innerHTML = '<option value="">Ir para a seção...</option>';
+    
+    // Injeta Seção 0 e Seção 1 de Cabeçalho Fixos
+    navMenu.innerHTML += `<option value="secao-0">0. Identificação da Inspeção</option>`;
+    navMenu.innerHTML += `<option value="secao-1">1. Identificação do Veículo</option>`;
+    
+    // Injeta as Seções Dinâmicas (2 até 13)
     SECTIONS.forEach(sec => {
       navMenu.innerHTML += `<option value="secao-${sec.n}">${sec.n}. ${sec.title}</option>`;
     });
+    
+    // Injeta as Seções Finais Estáticas (14 e 15)
+    navMenu.innerHTML += `<option value="secao-14">14. Registro de Não Conformidades</option>`;
+    navMenu.innerHTML += `<option value="secao-15">15. Conclusão da Inspeção</option>`;
 
     navMenu.addEventListener('change', (e) => {
       if (!e.target.value) return;
@@ -338,10 +339,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
     
-    // Limpa a cor de todas as opções (de todas as seções)
     document.querySelectorAll('.opt, .crit').forEach(el => el.classList.remove('sel'));
     document.querySelectorAll('.class-opt').forEach(el => el.classList.remove('sel-apto', 'sel-restr', 'sel-inapto'));
     
+    // Reseta caixas de seleção da FIPE
+    const selM = document.getElementById('fipe-marca');
+    const selMod = document.getElementById('fipe-modelo');
+    const selA = document.getElementById('fipe-ano');
+    if(selM) selM.value = '';
+    if(selMod) { selMod.innerHTML = '<option value="">Aguardando Marca...</option>'; selMod.disabled = true; }
+    if(selA) { selA.innerHTML = '<option value="">Aguardando Modelo...</option>'; selA.disabled = true; }
+
+    // Reseta as bordas indicadoras da busca por placa
+    document.getElementById('chassi').style.border = "";
+    document.getElementById('numMotor').style.border = "";
+
     photoUrls = {}; 
     currentSeq = null; 
     updateGauges();
@@ -368,13 +380,14 @@ document.addEventListener('DOMContentLoaded', () => {
         input.checked = true; 
         const label = input.closest('label');
         
-        // Reconstrói a seleção visual dependendo de qual seção for
-        if (label.classList.contains('opt') || label.classList.contains('crit')) {
-          label.classList.add('sel'); 
-        } else if (label.classList.contains('class-opt')) {
-          if (val === 'apto') label.classList.add('sel-apto');
-          if (val === 'restricoes') label.classList.add('sel-restr');
-          if (val === 'inapto') label.classList.add('sel-inapto');
+        if (label) {
+          if (label.classList.contains('opt') || label.classList.contains('crit')) {
+            label.classList.add('sel'); 
+          } else if (label.classList.contains('class-opt')) {
+            if (val === 'apto') label.classList.add('sel-apto');
+            if (val === 'restricoes') label.classList.add('sel-restr');
+            if (val === 'inapto') label.classList.add('sel-inapto');
+          }
         }
       }
     });
