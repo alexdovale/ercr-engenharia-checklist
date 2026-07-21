@@ -1,26 +1,89 @@
 /**
- * js/render.js
+ * js/ui/render.js
  * Gerenciador de Renderização da Interface e do PDF (Impressão)
  */
 
 const UIRender = {
+
+  /**
+   * Injeta uma única vez os estilos de tela para a miniatura de foto e o
+   * lightbox. Mantido em JS para não depender do main.css.
+   */
   _injectPhotoStyles: () => {
     if (document.getElementById('ui-photo-styles')) return; // já injetado
     const style = document.createElement('style');
     style.id = 'ui-photo-styles';
     style.textContent = `
       .photo-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-      .photo-btn { border: 1px solid #ccc; background: #f5f5f5; border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+
+      .photo-btn {
+        border: 1px solid #ccc;
+        background: #f5f5f5;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
       .photo-btn:hover { background: #ececec; }
+
+      /* Miniatura no FORMULÁRIO (tela) - tamanho bom para leitura */
       .photo-thumb-wrap .photo-thumb { position: relative; display: inline-block; }
-      .photo-thumb-wrap .photo-thumb img { width: 160px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #ccc; cursor: zoom-in; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-      .photo-thumb-wrap .photo-remove { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #b00020; color: #fff; border: 2px solid #fff; font-size: 13px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-      .photo-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; cursor: zoom-out; padding: 24px; }
-      .photo-lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+      .photo-thumb-wrap .photo-thumb img {
+        width: 160px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        cursor: zoom-in;
+        display: block;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      }
+      .photo-thumb-wrap .photo-remove {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #b00020;
+        color: #fff;
+        border: 2px solid #fff;
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+
+      /* Lightbox para ver a foto em tamanho grande */
+      .photo-lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        cursor: zoom-out;
+        padding: 24px;
+      }
+      .photo-lightbox img {
+        max-width: 90vw;
+        max-height: 90vh;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+      }
     `;
     document.head.appendChild(style);
   },
 
+  /**
+   * Abre um lightbox em tela cheia para visualizar a foto anexada.
+   */
   _openLightbox: (src) => {
     const overlay = document.createElement('div');
     overlay.className = 'photo-lightbox';
@@ -29,28 +92,38 @@ const UIRender = {
     document.body.appendChild(overlay);
   },
 
+  /**
+   * Ativa (uma única vez) o estilo de tamanho da miniatura + o clique para
+   * ampliar (lightbox).
+   */
   initPhotoDisplay: () => {
     UIRender._injectPhotoStyles();
     if (document.body && document.body.dataset.photoDisplayBound) return;
+
     document.addEventListener('click', (e) => {
       if (e.target.closest('.photo-remove')) return;
+
       const thumbImg = e.target.closest('.photo-thumb-wrap img');
       if (thumbImg) UIRender._openLightbox(thumbImg.src);
     });
+
     if (document.body) document.body.dataset.photoDisplayBound = 'true';
   },
 
+  /**
+   * Constrói as seções do checklist no formulário HTML
+   */
   renderChecklist: (containerId, sectionsArray) => {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     UIRender._injectPhotoStyles();
-    container.innerHTML = ''; 
+    container.innerHTML = ''; // Limpa antes de renderizar
 
     sectionsArray.forEach(sec => {
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
-      sheet.id = `secao-${sec.n}`; 
+      sheet.id = `secao-${sec.n}`; // 🔥 ÂNCORA PARA O MENU DE NAVEGAÇÃO RÁPIDA
 
       const head = document.createElement('div');
       head.className = 'sheet-head';
@@ -63,11 +136,14 @@ const UIRender = {
       sec.items.forEach((item, idx) => {
         const isObj = typeof item === 'object';
         const text = isObj ? item.text : item;
-        const opts = isObj ? item.opts : [['conforme','Conf.'],['nao_conforme','N.Conf.'],['na','N/A']];
+        
+        // 🔥 TRAVA DE SEGURANÇA PARA EVITAR CRASH SE FALTAR OPTS
+        const opts = (isObj && item.opts) ? item.opts : [['conforme','Conf.'],['nao_conforme','N.Conf.'],['na','N/A']];
         const itemId = `s${sec.n}-i${idx}`;
 
         const row = document.createElement('div');
         row.className = 'item-row';
+
         const numLabel = `${sec.n}.${idx+1}`;
         row.innerHTML = `
           <div class="item-text"><span class="item-num">${numLabel}</span>${text}</div>
@@ -86,6 +162,7 @@ const UIRender = {
         `;
         body.appendChild(row);
       });
+
       sheet.appendChild(body);
       container.appendChild(sheet);
     });
@@ -93,22 +170,53 @@ const UIRender = {
     UIRender.initPhotoDisplay();
   },
 
+  /**
+   * Monta o bloco visual da assinatura de acordo com o método escolhido para o PDF
+   */
   renderizarBlocoAssinatura: (dadosAssinatura, typedNameFallback) => {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    if (!dadosAssinatura) return `<div style="height: 45px; display:flex; align-items:flex-end; justify-content:center;"><b>${esc(typedNameFallback) || ''}</b></div>`;
+
+    if (!dadosAssinatura) {
+      return `<div class="pr-field-line">Assinatura: <b>${esc(typedNameFallback) || '____________________________________'}</b></div>`;
+    }
 
     switch (dadosAssinatura.methodUsed) {
       case 'canvas':
-        return `<img class="pr-signature-img" src="${dadosAssinatura.image}" style="margin: 0 auto; max-height: 45px;">`;
+        return `<div class="pr-field-line">Assinatura:<br><img class="pr-signature-img" src="${dadosAssinatura.image}"></div>`;
+
       case 'icp':
-        return `<div style="font-size: 8pt; font-family: monospace; padding: 5px 0;">Assinado Gov.br: ${dadosAssinatura.metadata.dadosCertificado.nome}</div>`;
+        const meta = dadosAssinatura.metadata.dadosCertificado;
+        return `
+          <div style="border: 1px solid #111; padding: 10px; font-size: 9px; font-family: monospace; margin-top: 4px;">
+            <strong>ASSINADO DIGITALMENTE (ICP-Brasil/Gov.br)</strong><br>
+            Assinante: ${meta.nome} (CPF: ${meta.cpf})<br>
+            Emissor: ${meta.emissor}<br>
+            Hash da Transação: ${dadosAssinatura.metadata.documentHash}<br>
+            Data: ${new Date(dadosAssinatura.metadata.timestamp).toLocaleString('pt-BR')}
+          </div>
+        `;
+
       case 'remote':
-        return `<div style="font-size: 8pt; font-family: monospace; padding: 5px 0; color: #555;">Assinatura Remota: ${dadosAssinatura.metadata.status}</div>`;
+        const rMeta = dadosAssinatura.metadata;
+        const status = rMeta.status === 'pendente_assinatura' ? 'PENDENTE DE ASSINATURA PELO CLIENTE' : 'ASSINATURA REMOTA CONCLUÍDA';
+        return `
+          <div style="border: 1px dashed #666; padding: 10px; font-size: 9px; font-family: monospace; color: #555; margin-top: 4px;">
+            <strong>${status}</strong><br>
+            Enviado para: ${rMeta.contatoDestino}<br>
+            ID do Envelope: ${rMeta.envelopeId}<br>
+            Data de Envio: ${new Date(rMeta.timestampEnvio).toLocaleString('pt-BR')}<br>
+            <em>A validade deste documento depende da conclusão da assinatura via plataforma externa.</em>
+          </div>
+        `;
+
       default:
-        return `<div style="height: 45px; display:flex; align-items:flex-end; justify-content:center;"><b>${esc(typedNameFallback) || ''}</b></div>`;
+        return `<div class="pr-field-line">Assinatura: <b>${esc(typedNameFallback) || '____________________________________'}</b></div>`;
     }
   },
 
+  /**
+   * Auxiliares de formatação
+   */
   fmtDateBR: (iso) => {
     if(!iso) return '';
     const parts = iso.split('-');
@@ -121,33 +229,49 @@ const UIRender = {
     return `Nº ${String(seq.number).padStart(4,'0')}/${seq.year}`;
   },
 
-  prFooterHTML: () => {
+  prFooterHTML: (logoB64, cnpj) => {
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
     return `
     <div class="pr-footer">
-      <div class="pr-footer-brand">
-        <img src="${logoUrl}" alt="Logo ERCR">
-        <div>
-          <div class="name">ERCR ENGENHARIA MECÂNICA</div>
-          <div class="sub">ERCR.ENGENHARIA | (21) 96414-6270 | WWW.ERCRENGENHARIA.COM.BR</div>
+      <svg class="pr-wave-svg" viewBox="0 0 1000 140" preserveAspectRatio="none">
+        <path d="M0,55 C230,130 420,-10 650,45 C820,85 900,60 1000,20 L1000,140 L0,140 Z" fill="#000"/>
+      </svg>
+      <div class="pr-footer-content">
+        <div class="pr-footer-brand">
+          <img src="${logoUrl}" alt="ERCR">
+          <div class="txt">
+            <div class="name">ERCR ENGENHARIA</div>
+            <div class="sub">MECÂNICA · CNPJ ${cnpj}</div>
+          </div>
+        </div>
+        <div class="pr-footer-right">
+          (21) 96414-6270 &nbsp;·&nbsp; ERCR.ENGENHARIA<br>
+          WWW.ERCRENGENHARIA.COM.BR
         </div>
       </div>
     </div>`;
   },
 
+  /**
+   * Gera todo o HTML para impressão do Relatório de Inspeção (PDF)
+   */
   buildPrintReport: (sectionsArray, signatureData, currentSeq, logoB64, cnpj) => {
     const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const radioVal = name => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; };
     const photoSrc = itemId => { const img = document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb img`); return img ? img.src : null; };
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
     let html = '<div class="pr-page">';
 
-    html += `<div class="pr-header-block">
-               <h1 class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</h1>
-               ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
-             </div>`;
+    html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
+      <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
+    </div>`;
+
+    html += `<div style="position:relative;">
+      <div class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</div>
+      ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
+    </div>`;
 
     html += `<div class="pr-section-title">IDENTIFICAÇÃO DA INSPEÇÃO</div>`;
     html += `<div class="pr-field-line">Empresa Responsável: <b>${esc(v('empresa'))}</b></div>`;
@@ -188,12 +312,12 @@ const UIRender = {
         const photo = photoSrc(itemId);
         html += `<tr class="pr-row">
           <td class="pr-item-cell">
-            <strong>${sec.n}.${idx+1}</strong> ${esc(item)}
+            ${sec.n}.${idx+1} ${esc(item)}
             ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
           </td>
-          <td class="pr-circle-cell">${checkCircle(val==='conforme')}</td>
-          <td class="pr-circle-cell">${checkCircle(val==='nao_conforme')}</td>
-          <td class="pr-circle-cell">${checkCircle(val==='na')}</td>
+          <td class="pr-circle-cell"><span class="pr-circle ${val==='conforme'?'filled':''}"></span></td>
+          <td class="pr-circle-cell"><span class="pr-circle ${val==='nao_conforme'?'filled':''}"></span></td>
+          <td class="pr-circle-cell"><span class="pr-circle ${val==='na'?'filled':''}"></span></td>
         </tr>`;
       });
       html += `</tbody></table>`;
@@ -203,80 +327,71 @@ const UIRender = {
         const itemId = `s${sec.n}-i${idx}`;
         const val = radioVal(itemId);
         const photo = photoSrc(itemId);
+        
+        // 🔥 TRAVA DE SEGURANÇA PARA ITENS ESPECIAIS NO PDF
+        const itemOpts = item.opts || [['conforme','Conf.'],['nao_conforme','N.Conf.'],['na','N/A']];
+
         html += `<div class="pr-special-row">
           <div>
-            <strong>${sec.n}.${idx+1}</strong> ${esc(item.text)}
+            ${sec.n}.${idx+1} ${esc(item.text)}
             ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
           </div>
           <div class="pr-special-opts">
-            ${item.opts.map(([ov,ol])=>`<span>${checkCircle(val===ov)} ${esc(ol)}</span>`).join('')}
+            ${itemOpts.map(([ov,ol])=>`<span><span class="pr-circle ${val===ov?'filled':''}"></span>${esc(ol)}</span>`).join('')}
           </div>
         </div>`;
       });
     });
 
     html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
-    let hasNC = false;
     for(let i=1;i<=3;i++){
-      const idNc = v('nc'+i+'-item');
-      if(!idNc && !v('nc'+i+'-desc')) continue;
-      hasNC = true;
       const crit = radioVal(`nc${i}-crit`);
       const photo = photoSrc(`nc${i}`);
       html += `<div class="pr-nc-block">
         <h4>NC-0${i}</h4>
-        <div class="pr-field-pair">
-          <div>Item do Checklist: <b>${esc(idNc)}</b></div>
-          <div>Prazo: <b>${esc(UIRender.fmtDateBR(v('nc'+i+'-prazo')))}</b></div>
-        </div>
+        <div class="pr-field-line">Item do Checklist: <b>${esc(v('nc'+i+'-item'))}</b></div>
         <div class="pr-field-line">Descrição da Não Conformidade: <b>${esc(v('nc'+i+'-desc'))}</b></div>
-        <div class="pr-field-line">Recomendação Técnica: <b>${esc(v('nc'+i+'-rec'))}</b></div>
+        ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
         <div class="pr-crit-row">Criticidade:
           <span><span class="pr-checkbox ${crit==='baixa'?'checked':''}"></span>Baixa</span>
           <span><span class="pr-checkbox ${crit==='media'?'checked':''}"></span>Média</span>
           <span><span class="pr-checkbox ${crit==='alta'?'checked':''}"></span>Alta</span>
         </div>
-        ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
+        <div class="pr-field-line" style="margin-top:4px;">Recomendação Técnica: <b>${esc(v('nc'+i+'-rec'))}</b></div>
+        <div class="pr-field-line">Prazo: <b>${esc(UIRender.fmtDateBR(v('nc'+i+'-prazo')))}</b></div>
       </div>`;
     }
-    if(!hasNC) html += `<div class="pr-field-line">Nenhuma Não Conformidade registrada.</div>`;
 
     const classificacao = radioVal('classificacao');
     html += `<div class="pr-section-title">15. CONCLUSÃO DA INSPEÇÃO</div>`;
-    html += `<div class="pr-nc-block" style="border-left-color: #111;">
-               <div style="font-weight:700; margin-bottom:8px;">CLASSIFICAÇÃO FINAL</div>
-               <div class="pr-field-line">${checkCircle(classificacao === 'apto')} APTO PARA OPERAÇÃO</div>
-               <div class="pr-field-line">${checkCircle(classificacao === 'restricoes')} APTO PARA OPERAÇÃO COM RESTRIÇÕES</div>
-               <div class="pr-field-line">${checkCircle(classificacao === 'inapto')} INAPTO PARA OPERAÇÃO</div>
-             </div>`;
+    html += `<div class="pr-field-line" style="font-weight:700;">Classificação Final</div>`;
+    [['apto','APTO PARA OPERAÇÃO'],['restricoes','APTO PARA OPERAÇÃO COM RESTRIÇÕES'],['inapto','INAPTO PARA OPERAÇÃO']].forEach(([cv,cl])=>{
+      html += `<div class="pr-class-opt"><span class="pr-checkbox ${classificacao===cv?'checked':''}"></span> ${cl}</div>`;
+    });
     html += `<div class="pr-field-line" style="margin-top:8px;font-weight:700;">Considerações Técnicas</div>`;
     html += `<div class="pr-field-line" style="white-space:pre-wrap;">${esc(v('consideracoes'))}</div>`;
 
-    html += `<div class="pr-section-title">ASSINATURAS</div>
-             <div class="pr-field-pair" style="border:none; margin-top:20px;">
-               <div style="text-align:center;">
-                 ${UIRender.renderizarBlocoAssinatura(signatureData?.respIns, v('respInsAssinatura'))}
-                 <hr style="border:0; border-bottom:1px solid #000; width:80%; margin:5px auto;">
-                 <strong>RESPONSÁVEL PELA INSPEÇÃO</strong><br>
-                 Nome: ${esc(v('respInsNome'))}<br>
-                 CREA: ${esc(v('respInsCrea'))}<br>
-                 Data: ${esc(UIRender.fmtDateBR(v('respInsData')))}
-               </div>
-               <div style="text-align:center;">
-                 ${UIRender.renderizarBlocoAssinatura(signatureData?.repCli, v('repCliAssinatura'))}
-                 <hr style="border:0; border-bottom:1px solid #000; width:80%; margin:5px auto;">
-                 <strong>REPRESENTANTE DO CLIENTE</strong><br>
-                 Nome: ${esc(v('repCliNome'))}<br>
-                 Cargo: ${esc(v('repCliCargo'))}<br>
-                 Data: ${esc(UIRender.fmtDateBR(v('repCliData')))}
-               </div>
-             </div>`;
+    html += `<div class="pr-field-line" style="margin-top:12px;font-weight:700;">Responsável pela Inspeção</div>`;
+    html += `<div class="pr-field-line">Nome: <b>${esc(v('respInsNome'))}</b></div>`;
+    html += `<div class="pr-field-line">CREA: <b>${esc(v('respInsCrea'))}</b></div>`;
+    html += UIRender.renderizarBlocoAssinatura(signatureData?.respIns, v('respInsAssinatura'));
+    html += `<div class="pr-field-line">Data: <b>${esc(UIRender.fmtDateBR(v('respInsData')))}</b></div>`;
 
-    html += UIRender.prFooterHTML();
-    html += '</div>'; 
+    html += `<div class="pr-field-line" style="margin-top:12px;font-weight:700;">Representante do Cliente</div>`;
+    html += `<div class="pr-field-line">Nome: <b>${esc(v('repCliNome'))}</b></div>`;
+    html += `<div class="pr-field-line">Cargo: <b>${esc(v('repCliCargo'))}</b></div>`;
+    html += UIRender.renderizarBlocoAssinatura(signatureData?.repCli, v('repCliAssinatura'));
+    html += `<div class="pr-field-line">Data: <b>${esc(UIRender.fmtDateBR(v('repCliData')))}</b></div>`;
+
+    html += UIRender.prFooterHTML(logoB64, cnpj);
+    html += '</div>';
+
     document.getElementById('print-report').innerHTML = html;
   },
 
+  /**
+   * Gera o HTML para impressão do Recibo
+   */
   buildReceiptReport: (currentSeq, logoB64, cnpj) => {
     const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -287,6 +402,7 @@ const UIRender = {
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
     let html = '<div class="pr-page">';
+
     html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
       <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
     </div>`;
@@ -308,8 +424,10 @@ const UIRender = {
     </div>`;
 
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
-    html += UIRender.prFooterHTML();
+
+    html += UIRender.prFooterHTML(logoB64, cnpj);
     html += '</div>';
+
     document.getElementById('print-report').innerHTML = html;
   }
 };
