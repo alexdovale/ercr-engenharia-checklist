@@ -1,30 +1,37 @@
 /**
  * css/print.css
  * Estilos otimizados para Impressão e Geração de PDF (Padrão ERCR Engenharia)
+ * Versão revisada — hierarquia visual, espaçamento e consistência de marca
  */
 
 @media print {
-  /* Configuração da Página A4 */
+  /* ===== Configuração da Página A4 ===== */
   @page {
     size: A4;
-    margin: 10mm 15mm 15mm 15mm;
+    margin: 12mm 14mm 24mm 14mm; /* margem inferior maior para acomodar o rodapé com folga */
   }
 
-  body {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
     background: #fff !important;
-    color: #000 !important;
-    font-family: 'IBM Plex Sans', sans-serif;
+    color: #1a1a1a !important;
+    font-family: 'IBM Plex Sans', Arial, sans-serif;
     font-size: 10pt;
-    line-height: 1.3;
+    line-height: 1.35;
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
   }
 
   /* Oculta elementos de tela que não devem sair no PDF */
-  header.dash, 
-  .actions, 
-  #screen-lock, 
-  #screen-list, 
+  header.dash,
+  .actions,
+  #screen-lock,
+  #screen-list,
   .dash-controls,
   #fipe-loading,
   #fipe-error {
@@ -37,206 +44,249 @@
     width: 100%;
   }
 
-  /* Estrutura de cada Página Impresa */
+  /* ===== Estrutura de cada Página Impressa ===== */
   .pr-page {
     position: relative;
     page-break-after: always;
-    min-height: 275mm;
+    break-after: page;
+    min-height: 263mm; /* ajustado à margem inferior de 24mm */
     box-sizing: border-box;
-    padding-bottom: 25mm; /* Espaço para o rodapé fixo */
+    padding-bottom: 22mm; /* espaço reservado para o rodapé fixo */
   }
 
   .pr-page:last-child {
     page-break-after: avoid;
+    break-after: avoid;
   }
 
-  /* Títulos e Cabeçalhos do PDF */
+  /* Evita que blocos importantes sejam cortados entre páginas */
+  .pr-nc-block,
+  .pr-table,
+  .pr-special-row,
+  .pr-section-title {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ===== Cabeçalho / Identificação do Relatório ===== */
+  .pr-header-block {
+    border-bottom: 2px solid #111;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+
   .pr-title {
-    font-size: 13pt;
+    font-size: 14pt;
     font-weight: 700;
     text-align: center;
     text-transform: uppercase;
-    margin-bottom: 4px;
-    letter-spacing: 0.5px;
+    margin: 0 0 3px 0;
+    letter-spacing: 0.6px;
+    color: #000;
   }
 
   .pr-seq {
     text-align: center;
-    font-size: 10pt;
-    font-weight: 600;
-    margin-bottom: 12px;
-    color: #333;
+    font-size: 9.5pt;
+    font-weight: 500;
+    margin: 0 0 10px 0;
+    color: #444;
+    letter-spacing: 0.3px;
   }
 
+  /* ===== Títulos de Seção ===== */
   .pr-section-title {
     background-color: #111 !important;
     color: #fff !important;
     font-size: 9pt;
     font-weight: 700;
     text-transform: uppercase;
-    padding: 4px 8px;
-    margin-top: 10px;
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    padding: 5px 10px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+    letter-spacing: 0.6px;
+    border-radius: 2px;
   }
 
-  /* Linhas e Grades de Dados */
+  /* ===== Linhas e Grades de Dados ===== */
   .pr-field-line {
     font-size: 9pt;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+    border-bottom: 1px dotted #ddd;
+  }
+
+  .pr-field-line strong,
+  .pr-field-pair strong {
+    font-weight: 600;
+    color: #000;
   }
 
   .pr-field-pair {
     display: flex;
     justify-content: space-between;
     font-size: 9pt;
-    margin-bottom: 3px;
-    gap: 15px;
+    margin-bottom: 4px;
+    gap: 18px;
+    padding-bottom: 2px;
+    border-bottom: 1px dotted #ddd;
   }
 
   .pr-field-pair > div {
     flex: 1;
   }
 
-  /* Tabelas do Checklist no PDF */
+  /* ===== Tabelas do Checklist ===== */
   .pr-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
     font-size: 8.5pt;
   }
 
   .pr-table th {
-    background-color: #eee !important;
-    color: #000;
+    background-color: #222 !important;
+    color: #fff !important;
     font-weight: 700;
     text-align: left;
-    padding: 3px 6px;
-    border: 1px solid #ccc;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    padding: 4px 8px;
+    border: 1px solid #222;
+    text-transform: uppercase;
+    font-size: 8pt;
+    letter-spacing: 0.3px;
   }
 
   .pr-table td {
-    padding: 3px 6px;
-    border: 1px solid #ddd;
+    padding: 4px 8px;
+    border: 1px solid #ccc;
     vertical-align: middle;
   }
 
+  .pr-table tr:nth-child(even) td {
+    background-color: #f7f7f7 !important;
+  }
+
   .pr-item-cell {
-    width: 70%;
+    width: 65%;
   }
 
   .pr-circle-cell {
     text-align: center;
-    width: 10%;
+    width: 12%;
   }
 
-  /* Círculos e Caixas de Marcação de Conformidade */
+  /* ===== Círculos e Caixas de Marcação de Conformidade ===== */
   .pr-circle {
     display: inline-block;
-    width: 10px;
-    height: 10px;
-    border: 1px solid #000;
+    width: 11px;
+    height: 11px;
+    border: 1.5px solid #000;
     border-radius: 50%;
     vertical-align: middle;
   }
 
   .pr-circle.filled {
     background-color: #000 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
   .pr-checkbox {
     display: inline-block;
-    width: 10px;
-    height: 10px;
-    border: 1px solid #000;
-    margin-right: 5px;
+    width: 11px;
+    height: 11px;
+    border: 1.5px solid #000;
+    margin-right: 6px;
     vertical-align: middle;
+    border-radius: 2px;
   }
 
   .pr-checkbox.checked {
     background-color: #000 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
-  /* Blocos Especiais (Itens com múltiplas opções) */
+  /* ===== Blocos Especiais (itens com múltiplas opções) ===== */
   .pr-special-row {
     display: flex;
     justify-content: space-between;
-    font-size: 8.5pt;
-    padding: 3px 6px;
-    border: 1px solid #ddd;
-    margin-bottom: 2px;
     align-items: center;
+    font-size: 8.5pt;
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+    border-left: 3px solid #111;
+    margin-bottom: 4px;
+    border-radius: 2px;
   }
 
   .pr-special-opts {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     font-size: 8pt;
   }
 
   .pr-special-opts span {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
   }
 
-  /* Seção de Não Conformidades */
+  /* ===== Seção de Não Conformidades ===== */
   .pr-nc-block {
-    border: 1px solid #ccc;
-    padding: 6px;
-    margin-bottom: 6px;
+    border: 1px solid #bbb;
+    border-left: 4px solid #b00020;
+    padding: 8px 10px;
+    margin-bottom: 8px;
     font-size: 8.5pt;
+    border-radius: 2px;
+    background-color: #fff !important;
   }
 
   .pr-nc-block h4 {
-    margin: 0 0 4px 0;
+    margin: 0 0 6px 0;
     font-size: 9pt;
+    font-weight: 700;
+    color: #b00020;
     border-bottom: 1px solid #eee;
-    padding-bottom: 2px;
+    padding-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
 
   .pr-crit-row {
     display: flex;
     gap: 15px;
-    margin-top: 4px;
+    margin-top: 6px;
     font-size: 8pt;
+    color: #333;
   }
 
-  /* Miniaturas de Fotos no PDF */
+  /* ===== Miniaturas de Fotos ===== */
   .pr-photo-thumb {
-    max-width: 60px;
-    max-height: 45px;
+    max-width: 65px;
+    max-height: 48px;
     object-fit: cover;
     display: block;
-    margin-top: 3px;
+    margin-top: 4px;
     border: 1px solid #999;
+    border-radius: 2px;
   }
 
-  /* Assinaturas */
+  /* ===== Assinaturas ===== */
   .pr-signature-img {
     max-height: 45px;
     max-width: 200px;
     object-fit: contain;
     display: block;
-    margin-top: 2px;
+    margin-top: 3px;
   }
 
-  /* Rodapé Institucional Fixo na Página de Impressão */
+  /* ===== Rodapé Institucional Fixo ===== */
   .pr-footer {
     position: absolute;
-    bottom: 0;
+    bottom: -22mm; /* alinhado ao padding-bottom de .pr-page */
     left: 0;
     width: 100%;
-    height: 20mm;
-    border-top: 1px solid #ccc;
+    height: 18mm;
+    border-top: 1px solid #999;
+    padding-top: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -251,22 +301,34 @@
   }
 
   .pr-footer-brand img {
-    height: 25px;
+    height: 24px;
     object-fit: contain;
   }
 
   .pr-footer-brand .name {
     font-weight: 700;
     font-size: 8pt;
+    color: #000;
   }
 
   .pr-footer-brand .sub {
     font-size: 7pt;
-    color: #555;
+    color: #666;
   }
 
   .pr-footer-right {
     text-align: right;
-    color: #444;
+    color: #555;
+    line-height: 1.4;
+  }
+
+  /* Numeração de página automática (suportado por navegadores baseados em Chromium) */
+  .pr-page::after {
+    content: "Página " counter(page) " de " counter(pages);
+    position: absolute;
+    bottom: -20mm;
+    right: 0;
+    font-size: 7pt;
+    color: #888;
   }
 }
