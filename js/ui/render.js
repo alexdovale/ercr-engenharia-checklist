@@ -6,9 +6,13 @@
 const UIRender = {
 
   /**
-   * Injeta uma única vez os estilos de tela para a miniatura de foto e o lightbox.
-   * Mantido em JS para não depender de outro arquivo CSS que talvez não seja
-   * carregado em todas as telas do app.
+   * Injeta uma única vez os estilos de tela para a miniatura de foto e o
+   * lightbox. Mantido em JS para não depender do main.css.
+   * IMPORTANTE: o upload real da foto (Firebase Storage) é feito pelo
+   * app.js, que usa a estrutura .photo-cell > .photo-thumb-wrap > .photo-thumb > img.
+   * Aqui só cuidamos do TAMANHO/legibilidade e de um lightbox para ampliar —
+   * nada aqui intercepta clique no botão de foto nem o input de arquivo,
+   * para não duplicar/conflitar com o upload do app.js.
    */
   _injectPhotoStyles: () => {
     if (document.getElementById('ui-photo-styles')) return; // já injetado
@@ -29,11 +33,8 @@ const UIRender = {
       .photo-btn:hover { background: #ececec; }
 
       /* Miniatura no FORMULÁRIO (tela) - tamanho bom para leitura */
-      .photo-thumb {
-        position: relative;
-        display: inline-block;
-      }
-      .photo-thumb img {
+      .photo-thumb-wrap .photo-thumb { position: relative; display: inline-block; }
+      .photo-thumb-wrap .photo-thumb img {
         width: 160px;
         height: 120px;
         object-fit: cover;
@@ -43,7 +44,7 @@ const UIRender = {
         display: block;
         box-shadow: 0 1px 3px rgba(0,0,0,0.15);
       }
-      .photo-thumb .photo-remove {
+      .photo-thumb-wrap .photo-remove {
         position: absolute;
         top: -8px;
         right: -8px;
@@ -59,6 +60,7 @@ const UIRender = {
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 0;
       }
 
       /* Lightbox para ver a foto em tamanho grande */
@@ -85,36 +87,6 @@ const UIRender = {
   },
 
   /**
-   * Lê um arquivo de imagem, redimensiona/comprime via canvas (evita fotos
-   * enormes de câmera de celular travando o app ou pesando demais o PDF) e
-   * devolve uma dataURL (base64) pronta para exibir e para o PDF.
-   */
-  _readAndCompressImage: (file, callback) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX_DIM = 1280; // resolução máxima (lado maior)
-        let { width, height } = img;
-        if (width > height && width > MAX_DIM) {
-          height = Math.round(height * (MAX_DIM / width));
-          width = MAX_DIM;
-        } else if (height > MAX_DIM) {
-          width = Math.round(width * (MAX_DIM / height));
-          height = MAX_DIM;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        callback(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  },
-
-  /**
    * Abre um lightbox em tela cheia para visualizar a foto anexada.
    */
   _openLightbox: (src) => {
@@ -126,51 +98,24 @@ const UIRender = {
   },
 
   /**
-   * Liga (uma única vez, por delegação) os eventos de clique/troca de arquivo
-   * para todos os campos de foto dentro do container informado. Funciona
-   * mesmo quando as seções são recriadas dinamicamente.
+   * Ativa (uma única vez) o estilo de tamanho da miniatura + o clique para
+   * ampliar (lightbox). NÃO mexe em upload/remoção de foto — isso é feito
+   * pelo app.js. Delegado no document para funcionar em qualquer foto,
+   * onde quer que ela apareça na página, sem precisar saber o containerId.
    */
-  _attachPhotoHandlers: (containerId) => {
-    const container = document.getElementById(containerId);
-    if (!container || container.dataset.photoHandlersBound) return;
-    container.dataset.photoHandlersBound = 'true';
+  initPhotoDisplay: () => {
+    UIRender._injectPhotoStyles();
+    if (document.body && document.body.dataset.photoDisplayBound) return;
 
-    container.addEventListener('click', (e) => {
-      const removeBtn = e.target.closest('.photo-remove');
-      if (removeBtn) {
-        e.stopPropagation();
-        const cell = removeBtn.closest('.photo-cell');
-        cell.querySelector('.photo-thumb').innerHTML = '';
-        const input = cell.querySelector('input[type="file"]');
-        if (input) input.value = '';
-        return;
-      }
+    document.addEventListener('click', (e) => {
+      // Nunca interceptar o clique no botão de remover foto (isso é do app.js)
+      if (e.target.closest('.photo-remove')) return;
 
-      const thumbImg = e.target.closest('.photo-thumb img');
-      if (thumbImg) {
-        UIRender._openLightbox(thumbImg.src);
-        return;
-      }
-
-      const btn = e.target.closest('.photo-btn');
-      if (btn) {
-        const cell = btn.closest('.photo-cell');
-        cell.querySelector('input[type="file"]').click();
-      }
+      const thumbImg = e.target.closest('.photo-thumb-wrap img');
+      if (thumbImg) UIRender._openLightbox(thumbImg.src);
     });
 
-    container.addEventListener('change', (e) => {
-      const input = e.target.closest('.photo-cell input[type="file"]');
-      if (!input || !input.files || !input.files[0]) return;
-      const cell = input.closest('.photo-cell');
-      const thumbWrap = cell.querySelector('.photo-thumb');
-      UIRender._readAndCompressImage(input.files[0], (dataUrl) => {
-        thumbWrap.innerHTML = `
-          <img src="${dataUrl}" alt="Foto anexada">
-          <button type="button" class="photo-remove" title="Remover foto">✕</button>
-        `;
-      });
-    });
+    if (document.body) document.body.dataset.photoDisplayBound = 'true';
   },
 
   /**
@@ -219,7 +164,7 @@ const UIRender = {
             <button type="button" class="photo-btn" title="Anexar foto">📷 Foto</button>
             <!-- 🔥 SEM CAPTURE="ENVIRONMENT" PARA PERMITIR ESCOLHER DA GALERIA OU CÂMERA -->
             <input type="file" accept="image/*" style="display:none">
-            <div class="photo-thumb"></div>
+            <div class="photo-thumb-wrap"></div>
           </div>
         `;
         body.appendChild(row);
@@ -229,8 +174,8 @@ const UIRender = {
       container.appendChild(sheet);
     });
 
-    // Liga os handlers de foto uma única vez (funciona para todas as seções recriadas)
-    UIRender._attachPhotoHandlers(containerId);
+    // Ativa o tamanho legível da miniatura + lightbox (não mexe no upload, que é do app.js)
+    UIRender.initPhotoDisplay();
   },
 
   /**
@@ -505,3 +450,12 @@ const UIRender = {
     document.getElementById('print-report').innerHTML = html;
   }
 };
+
+// Ativa o tamanho legível da miniatura + lightbox assim que o script carrega.
+// Como é delegação no document, cobre tanto o checklist (renderizado depois)
+// quanto os blocos de Não Conformidade (já presentes no HTML desde o início).
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', UIRender.initPhotoDisplay);
+} else {
+  UIRender.initPhotoDisplay();
+}
