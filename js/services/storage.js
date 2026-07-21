@@ -1,13 +1,12 @@
 /**
  * js/services/storage.js
- * Serviço de Banco de Dados e Armazenamento (Firestore e Firebase Storage)
+ * Serviço de Banco de Dados (Firestore) e Armazenamento de Fotos (Cloudinary)
  */
 
 const StorageService = {
   
-  // Referências para o Firestore e Storage (inicializados no config/firebase.js)
+  // Referência apenas para o Firestore (O Storage do Firebase não será mais usado para fotos)
   get db() { return firebase.firestore(); },
-  get storage() { return firebase.storage(); },
 
   /**
    * Obtém a lista de todas as inspeções para o painel inicial
@@ -44,7 +43,7 @@ const StorageService = {
   },
 
   /**
-   * Salva ou atualiza uma inspeção no banco de dados
+   * Salva ou atualiza uma inspeção no banco de dados (Firestore)
    * Se o ID for nulo, cria um novo documento.
    */
   async saveInspection(id, data) {
@@ -70,11 +69,11 @@ const StorageService = {
   },
 
   /**
-   * Exclui uma inspeção inteira, incluindo todas as fotos atreladas a ela
+   * Exclui uma inspeção inteira
    */
   async deleteInspection(id, photoUrls = {}) {
     try {
-      // 1. Apaga as fotos do Storage primeiro
+      // 1. Apaga as referências de fotos
       const itemIds = Object.keys(photoUrls);
       for (const itemId of itemIds) {
         await this.deletePhoto(id, itemId);
@@ -108,61 +107,56 @@ const StorageService = {
   },
 
   /**
-   * Comprime uma imagem antes de enviá-la para economizar espaço e dados
-   */
-  compressImage(file, maxWidth = 900, quality = 0.6) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          let w = img.width, h = img.height;
-          if (w > maxWidth) { 
-            h = Math.round(h * (maxWidth / w)); 
-            w = maxWidth; 
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; 
-          canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = reject;
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  },
-
-  /**
-   * Faz o upload de uma foto anexada a um item do checklist
+   * Faz o upload de uma foto anexada a um item do checklist DIRETAMENTE PARA O CLOUDINARY
    */
   async uploadPhoto(recordId, itemId, file) {
+    // Credenciais Oficiais (Unsigned Upload)
+    const cloudName = 'iil5r8l4'; 
+    const uploadPreset = 'checklist_fotos'; 
+
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    
+    // Cria o pacote de dados para enviar a imagem
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    
+    // Organiza a foto em uma pasta com o ID da inspeção lá no Cloudinary
+    formData.append('public_id', `inspecoes/${recordId}/${itemId}_${Date.now()}`);
+
     try {
-      const dataUrl = await this.compressImage(file);
-      const path = `inspections/${recordId}/photos/${itemId}.jpg`;
-      const ref = this.storage.ref(path);
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao enviar a imagem para o servidor do Cloudinary.');
+      }
+
+      const data = await response.json();
       
-      await ref.putString(dataUrl, 'data_url');
-      const downloadURL = await ref.getDownloadURL();
-      return downloadURL;
-    } catch (err) {
-      console.error("Erro no upload da foto:", err);
-      throw new Error("Não foi possível anexar a foto.");
+      // Retorna a URL segura (https) otimizada gerada pelo Cloudinary
+      return data.secure_url; 
+
+    } catch (error) {
+      console.error("Erro no Cloudinary:", error);
+      throw new Error("Não foi possível anexar a foto na nuvem.");
     }
   },
 
   /**
-   * Remove uma foto específica do Storage
+   * Desvincula uma foto da inspeção
    */
   async deletePhoto(recordId, itemId) {
-    try {
-      const path = `inspections/${recordId}/photos/${itemId}.jpg`;
-      await this.storage.ref(path).delete();
-    } catch (err) {
-      // Ignora erro se o arquivo já não existir
-      console.warn("Foto não encontrada para exclusão ou já apagada.", err);
-    }
+    /* 
+     * NOTA DE SEGURANÇA:
+     * Por estarmos usando o frontend (sem o API Secret), o Cloudinary não permite 
+     * a exclusão física do arquivo por aqui para evitar que hackers apaguem suas fotos.
+     * Portanto, apenas removemos o link do seu banco de dados Firebase. 
+     * A foto no documento desaparecerá normalmente!
+     */
+    console.log(`A referência da foto ${itemId} foi desvinculada da inspeção ${recordId}.`);
+    return true;
   }
 };
