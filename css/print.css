@@ -32,6 +32,7 @@
   .actions,
   #screen-lock,
   #screen-list,
+  #screen-form, /* Correção: Oculta o formulário de preenchimento no PDF */
   .dash-controls,
   #fipe-loading,
   #fipe-error {
@@ -57,6 +58,26 @@
   .pr-page:last-child {
     page-break-after: avoid;
     break-after: avoid;
+  }
+
+  /* ===== MARCA D'ÁGUA NO FUNDO DE TODAS AS PÁGINAS ===== */
+  .pr-page::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%; 
+    height: 60%;
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/8C19DE15-46A0-476A-8BFE-46193BF7F00D.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.05; /* Transparência bem suave (5%) */
+    z-index: 0; 
+    pointer-events: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* Evita que blocos importantes sejam cortados entre páginas */
