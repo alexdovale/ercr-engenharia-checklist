@@ -330,7 +330,7 @@
                 <div class="photo-cell" data-photo-item="nc${i}">
                   <button type="button" class="photo-btn" title="Anexar foto">📷 Foto</button>
                   <input type="file" accept="image/*" style="display:none">
-                  <div class="photo-thumb"></div>
+                  <div class="photo-thumb-wrap"></div>
                 </div>
               </div>
               <div class="field">
@@ -345,11 +345,6 @@
             </div>
           </div>
         `;
-      }
-      // Ativa (ou reforça) o upload/preview de fotos após injetar os blocos de NC.
-      // Seguro chamar mais de uma vez: UIRender.initPhotoUploads() é idempotente.
-      if (window.UIRender && typeof UIRender.initPhotoUploads === 'function') {
-        UIRender.initPhotoUploads();
       }
     }
 
