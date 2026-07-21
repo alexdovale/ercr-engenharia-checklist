@@ -258,15 +258,30 @@
     color: #333;
   }
 
-  /* ===== Miniaturas de Fotos ===== */
+  /* ===== Miniaturas de Fotos =====
+     Bloco próprio, em largura de página, para permitir tamanho de leitura real
+     (a foto de uma avaria/peça precisa ser visível, não decorativa). */
+  .pr-photo-block {
+    margin-top: 6px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .pr-photo-thumb {
-    max-width: 65px;
-    max-height: 48px;
-    object-fit: cover;
     display: block;
+    width: 100%;
+    max-width: 260px;
+    max-height: 190px;
+    object-fit: cover;
     margin-top: 4px;
     border: 1px solid #999;
-    border-radius: 2px;
+    border-radius: 3px;
+  }
+
+  /* Quando a foto está dentro de uma célula de tabela estreita, ainda assim
+     garante espaço suficiente para não parecer um selo ilegível */
+  .pr-item-cell .pr-photo-block {
+    max-width: 220px;
   }
 
   /* ===== Assinaturas ===== */
