@@ -4,61 +4,233 @@
  */
 
 const UIRender = {
-  
+
+  /**
+   * Injeta uma única vez os estilos de tela para a miniatura de foto e o lightbox.
+   * Mantido em JS para não depender de outro arquivo CSS que talvez não seja
+   * carregado em todas as telas do app.
+   */
+  _injectPhotoStyles: () => {
+    if (document.getElementById('ui-photo-styles')) return; // já injetado
+    const style = document.createElement('style');
+    style.id = 'ui-photo-styles';
+    style.textContent = `
+      .photo-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+      .photo-btn {
+        border: 1px solid #ccc;
+        background: #f5f5f5;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .photo-btn:hover { background: #ececec; }
+
+      /* Miniatura no FORMULÁRIO (tela) - tamanho bom para leitura */
+      .photo-thumb {
+        position: relative;
+        display: inline-block;
+      }
+      .photo-thumb img {
+        width: 160px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        cursor: zoom-in;
+        display: block;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      }
+      .photo-thumb .photo-remove {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #b00020;
+        color: #fff;
+        border: 2px solid #fff;
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Lightbox para ver a foto em tamanho grande */
+      .photo-lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        cursor: zoom-out;
+        padding: 24px;
+      }
+      .photo-lightbox img {
+        max-width: 90vw;
+        max-height: 90vh;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+      }
+    `;
+    document.head.appendChild(style);
+  },
+
+  /**
+   * Lê um arquivo de imagem, redimensiona/comprime via canvas (evita fotos
+   * enormes de câmera de celular travando o app ou pesando demais o PDF) e
+   * devolve uma dataURL (base64) pronta para exibir e para o PDF.
+   */
+  _readAndCompressImage: (file, callback) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1280; // resolução máxima (lado maior)
+        let { width, height } = img;
+        if (width > height && width > MAX_DIM) {
+          height = Math.round(height * (MAX_DIM / width));
+          width = MAX_DIM;
+        } else if (height > MAX_DIM) {
+          width = Math.round(width * (MAX_DIM / height));
+          height = MAX_DIM;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        callback(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  },
+
+  /**
+   * Abre um lightbox em tela cheia para visualizar a foto anexada.
+   */
+  _openLightbox: (src) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'photo-lightbox';
+    overlay.innerHTML = `<img src="${src}" alt="Foto ampliada">`;
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+  },
+
+  /**
+   * Liga (uma única vez, por delegação) os eventos de clique/troca de arquivo
+   * para todos os campos de foto dentro do container informado. Funciona
+   * mesmo quando as seções são recriadas dinamicamente.
+   */
+  _attachPhotoHandlers: (containerId) => {
+    const container = document.getElementById(containerId);
+    if (!container || container.dataset.photoHandlersBound) return;
+    container.dataset.photoHandlersBound = 'true';
+
+    container.addEventListener('click', (e) => {
+      const removeBtn = e.target.closest('.photo-remove');
+      if (removeBtn) {
+        e.stopPropagation();
+        const cell = removeBtn.closest('.photo-cell');
+        cell.querySelector('.photo-thumb').innerHTML = '';
+        const input = cell.querySelector('input[type="file"]');
+        if (input) input.value = '';
+        return;
+      }
+
+      const thumbImg = e.target.closest('.photo-thumb img');
+      if (thumbImg) {
+        UIRender._openLightbox(thumbImg.src);
+        return;
+      }
+
+      const btn = e.target.closest('.photo-btn');
+      if (btn) {
+        const cell = btn.closest('.photo-cell');
+        cell.querySelector('input[type="file"]').click();
+      }
+    });
+
+    container.addEventListener('change', (e) => {
+      const input = e.target.closest('.photo-cell input[type="file"]');
+      if (!input || !input.files || !input.files[0]) return;
+      const cell = input.closest('.photo-cell');
+      const thumbWrap = cell.querySelector('.photo-thumb');
+      UIRender._readAndCompressImage(input.files[0], (dataUrl) => {
+        thumbWrap.innerHTML = `
+          <img src="${dataUrl}" alt="Foto anexada">
+          <button type="button" class="photo-remove" title="Remover foto">✕</button>
+        `;
+      });
+    });
+  },
+
   /**
    * Constrói as seções do checklist no formulário HTML
    */
   renderChecklist: (containerId, sectionsArray) => {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
+    UIRender._injectPhotoStyles();
     container.innerHTML = ''; // Limpa antes de renderizar
 
     sectionsArray.forEach(sec => {
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
       sheet.id = `secao-${sec.n}`; // 🔥 ÂNCORA PARA O MENU DE NAVEGAÇÃO RÁPIDA
-      
+
       const head = document.createElement('div');
       head.className = 'sheet-head';
       head.innerHTML = `<span class="n">${sec.n}</span><h2>${sec.title}</h2>`;
       sheet.appendChild(head);
-      
+
       const body = document.createElement('div');
       body.className = 'sheet-body';
-      
+
       sec.items.forEach((item, idx) => {
         const isObj = typeof item === 'object';
         const text = isObj ? item.text : item;
         const opts = isObj ? item.opts : [['conforme','Conf.'],['nao_conforme','N.Conf.'],['na','N/A']];
         const itemId = `s${sec.n}-i${idx}`;
-        
+
         const row = document.createElement('div');
         row.className = 'item-row';
-        
+
         const numLabel = `${sec.n}.${idx+1}`;
         row.innerHTML = `
           <div class="item-text"><span class="item-num">${numLabel}</span>${text}</div>
           <div class="opts" data-item="${itemId}">
             ${opts.map(([val, label]) => {
-              const cls = (val === 'conforme' || val === 'realizado') ? 'c' : 
+              const cls = (val === 'conforme' || val === 'realizado') ? 'c' :
                           (val === 'nao_conforme' || val === 'nao_realizado') ? 'nc' : 'na';
               return `<label class="opt ${cls}" data-val="${val}"><input type="radio" name="${itemId}" value="${val}">${label}</label>`;
             }).join('')}
           </div>
           <div class="photo-cell" data-photo-item="${itemId}">
-            <button type="button" class="photo-btn" title="Anexar foto">📷</button>
-            <!-- 🔥 TIREI O CAPTURE="ENVIRONMENT" PARA PERMITIR ESCOLHER DA GALERIA OU CÂMERA -->
+            <button type="button" class="photo-btn" title="Anexar foto">📷 Foto</button>
+            <!-- 🔥 SEM CAPTURE="ENVIRONMENT" PARA PERMITIR ESCOLHER DA GALERIA OU CÂMERA -->
             <input type="file" accept="image/*" style="display:none">
-            <div class="photo-thumb-wrap"></div>
+            <div class="photo-thumb"></div>
           </div>
         `;
         body.appendChild(row);
       });
-      
+
       sheet.appendChild(body);
       container.appendChild(sheet);
     });
+
+    // Liga os handlers de foto uma única vez (funciona para todas as seções recriadas)
+    UIRender._attachPhotoHandlers(containerId);
   },
 
   /**
@@ -66,7 +238,7 @@ const UIRender = {
    */
   renderizarBlocoAssinatura: (dadosAssinatura, typedNameFallback) => {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    
+
     if (!dadosAssinatura) {
       return `<div class="pr-field-line">Assinatura: <b>${esc(typedNameFallback) || '____________________________________'}</b></div>`;
     }
@@ -99,7 +271,7 @@ const UIRender = {
             <em>A validade deste documento depende da conclusão da assinatura via plataforma externa.</em>
           </div>
         `;
-        
+
       default:
         return `<div class="pr-field-line">Assinatura: <b>${esc(typedNameFallback) || '____________________________________'}</b></div>`;
     }
@@ -150,12 +322,13 @@ const UIRender = {
   buildPrintReport: (sectionsArray, signatureData, currentSeq, logoB64, cnpj) => {
     const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const radioVal = name => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; };
+    // 🔥 CORRIGIDO: seletor agora bate com a classe real da miniatura (.photo-thumb)
     const photoSrc = itemId => { const img = document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb img`); return img ? img.src : null; };
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
     let html = '<div class="pr-page">';
-    
+
     // 🔥 LOGO CENTRALIZADA NO TOPO DA PRIMEIRA PÁGINA
     html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
       <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
@@ -201,28 +374,34 @@ const UIRender = {
     sectionsArray.forEach(sec=>{
       html += `<div class="pr-section-title">${sec.n}. ${esc(sec.title.toUpperCase())}</div>`;
       html += `<table class="pr-table"><thead><tr><th>Item</th><th>Conforme</th><th>Não Conforme</th><th>N/A</th></tr></thead><tbody>`;
-      
+
       sec.items.forEach((item,idx)=>{
         if(typeof item === 'object') return;
         const itemId = `s${sec.n}-i${idx}`;
         const val = radioVal(itemId);
         const photo = photoSrc(itemId);
         html += `<tr class="pr-row">
-          <td class="pr-item-cell">${sec.n}.${idx+1} ${esc(item)}${photo?`<img class="pr-photo-thumb" src="${photo}">`:''}</td>
+          <td class="pr-item-cell">
+            ${sec.n}.${idx+1} ${esc(item)}
+            ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
+          </td>
           <td class="pr-circle-cell"><span class="pr-circle ${val==='conforme'?'filled':''}"></span></td>
           <td class="pr-circle-cell"><span class="pr-circle ${val==='nao_conforme'?'filled':''}"></span></td>
           <td class="pr-circle-cell"><span class="pr-circle ${val==='na'?'filled':''}"></span></td>
         </tr>`;
       });
       html += `</tbody></table>`;
-      
+
       sec.items.forEach((item,idx)=>{
         if(typeof item !== 'object') return;
         const itemId = `s${sec.n}-i${idx}`;
         const val = radioVal(itemId);
         const photo = photoSrc(itemId);
         html += `<div class="pr-special-row">
-          <div>${sec.n}.${idx+1} ${esc(item.text)}${photo?`<img class="pr-photo-thumb" src="${photo}">`:''}</div>
+          <div>
+            ${sec.n}.${idx+1} ${esc(item.text)}
+            ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
+          </div>
           <div class="pr-special-opts">
             ${item.opts.map(([ov,ol])=>`<span><span class="pr-circle ${val===ov?'filled':''}"></span>${esc(ol)}</span>`).join('')}
           </div>
@@ -239,7 +418,7 @@ const UIRender = {
         <h4>NC-0${i}</h4>
         <div class="pr-field-line">Item do Checklist: <b>${esc(v('nc'+i+'-item'))}</b></div>
         <div class="pr-field-line">Descrição da Não Conformidade: <b>${esc(v('nc'+i+'-desc'))}</b></div>
-        ${photo?`<img class="pr-photo-thumb" src="${photo}">`:''}
+        ${photo?`<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>`:''}
         <div class="pr-crit-row">Criticidade:
           <span><span class="pr-checkbox ${crit==='baixa'?'checked':''}"></span>Baixa</span>
           <span><span class="pr-checkbox ${crit==='media'?'checked':''}"></span>Média</span>
@@ -275,7 +454,7 @@ const UIRender = {
 
     // 🔥 ADICIONAMOS O RODAPÉ DENTRO DA DIV PR-PAGE
     html += UIRender.prFooterHTML(logoB64, cnpj);
-    
+
     html += '</div>'; // Fecha o pr-page
 
     document.getElementById('print-report').innerHTML = html;
@@ -320,7 +499,7 @@ const UIRender = {
 
     // 🔥 ADICIONAMOS O RODAPÉ DENTRO DA DIV PR-PAGE
     html += UIRender.prFooterHTML(logoB64, cnpj);
-    
+
     html += '</div>'; // Fecha o pr-page
 
     document.getElementById('print-report').innerHTML = html;
