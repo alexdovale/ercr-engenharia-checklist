@@ -46,26 +46,6 @@
     padding-bottom: 25mm; /* Espaço para o rodapé fixo */
   }
 
-  /* MARCA D'ÁGUA NO FUNDO DE TODAS AS PÁGINAS */
-  .pr-page::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70%; /* Tamanho da logo no fundo */
-    height: 70%;
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.06; /* Muito transparente (6%) para não atrapalhar a leitura */
-    z-index: -1; /* Fica atrás de todo o texto e tabelas */
-    pointer-events: none;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
   .pr-page:last-child {
     page-break-after: avoid;
   }
