@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   /**
    * ==========================================
-   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX (MÓDULO SEQUENCIAL CORRIGIDO)
+   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX
    * ==========================================
    */
 
@@ -271,21 +271,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. CONSTRUTOR DO MENU DE NAVEGAÇÃO (0 ATÉ 15 EM ORDEM)
+  // 3. CONSTRUTOR DO MENU DE NAVEGAÇÃO
   const navMenu = document.getElementById('quick-nav');
   if (navMenu && typeof SECTIONS !== 'undefined') {
     navMenu.innerHTML = '<option value="">Ir para a seção...</option>';
     
-    // Injeta Seção 0 e Seção 1 de Cabeçalho Fixos
+    // Injeta Seção 0 e Seção 1
     navMenu.innerHTML += `<option value="secao-0">0. Identificação da Inspeção</option>`;
     navMenu.innerHTML += `<option value="secao-1">1. Identificação do Veículo</option>`;
     
-    // Injeta as Seções Dinâmicas (2 até 13)
+    // Injeta as Seções Dinâmicas
     SECTIONS.forEach(sec => {
       navMenu.innerHTML += `<option value="secao-${sec.n}">${sec.n}. ${sec.title}</option>`;
     });
     
-    // Injeta as Seções Finais Estáticas (14 e 15)
+    // Injeta as Seções Finais
     navMenu.innerHTML += `<option value="secao-14">14. Registro de Não Conformidades</option>`;
     navMenu.innerHTML += `<option value="secao-15">15. Conclusão da Inspeção</option>`;
 
@@ -342,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.opt, .crit').forEach(el => el.classList.remove('sel'));
     document.querySelectorAll('.class-opt').forEach(el => el.classList.remove('sel-apto', 'sel-restr', 'sel-inapto'));
     
-    // Reseta caixas de seleção da FIPE
     const selM = document.getElementById('fipe-marca');
     const selMod = document.getElementById('fipe-modelo');
     const selA = document.getElementById('fipe-ano');
@@ -350,13 +349,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if(selMod) { selMod.innerHTML = '<option value="">Aguardando Marca...</option>'; selMod.disabled = true; }
     if(selA) { selA.innerHTML = '<option value="">Aguardando Modelo...</option>'; selA.disabled = true; }
 
-    // Reseta as bordas indicadoras da busca por placa
     document.getElementById('chassi').style.border = "";
     document.getElementById('numMotor').style.border = "";
 
     photoUrls = {}; 
     currentSeq = null; 
     updateGauges();
+    
+    // Limpa fotos na tela ao iniciar nova inspeção
+    document.querySelectorAll('.photo-thumb-wrap').forEach(wrap => wrap.innerHTML = '');
     
     if (typeof canvasProvider !== 'undefined') {
       canvasProvider.clear('respIns'); 
@@ -369,11 +370,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state) return;
     currentRecordId = id;
     clearFormUI();
+    
+    // Restaura Textos
     Object.entries(state.text || {}).forEach(([key, val]) => { 
       const el = document.getElementById(key); 
       if (el) el.value = val; 
     });
     
+    // Restaura Checklists
     Object.entries(state.radios || {}).forEach(([name, val]) => {
       const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
       if (input) { 
@@ -393,7 +397,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('status-select').value = state.status || 'rascunho';
+    
+    // Restaura e desenha as Fotos salvas
     photoUrls = state.photoUrls || {};
+    Object.entries(photoUrls).forEach(([itemId, url]) => {
+      const itemCell = document.querySelector(`.photo-cell[data-photo-item="${itemId}"]`);
+      if (itemCell) {
+        const thumbWrap = itemCell.querySelector('.photo-thumb-wrap');
+        if (thumbWrap) {
+          thumbWrap.innerHTML = `
+            <div class="photo-thumb">
+              <img src="${url}">
+              <button type="button" class="photo-remove" data-item="${itemId}">x</button>
+            </div>`;
+          
+          const removeBtn = thumbWrap.querySelector('.photo-remove');
+          if (removeBtn) {
+            removeBtn.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              delete photoUrls[itemId];
+              thumbWrap.innerHTML = '';
+            });
+          }
+        }
+      }
+    });
+
     currentSeq = state.seq || null;
     document.getElementById('rec-id-label').textContent = `ID ${id}`;
     screenList.style.display = 'none'; 
