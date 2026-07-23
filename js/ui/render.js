@@ -1,6 +1,6 @@
 /**
  * js/render.js
- * Gerenciador de Renderização da Interface e do PDF (Impressão Padrão ERCR)
+ * Gerenciador de Renderização da Interface e do PDF (Sem cortes na Seção 13)
  */
 
 const UIRender = {
@@ -110,7 +110,7 @@ const UIRender = {
 
   /**
    * =================================================================
-   * 2. MOTOR DE IMPRESSÃO (PDF PADRÃO ERCR ENGENHARIA)
+   * 2. MOTOR DE IMPRESSÃO (BLOCO ÚNICO - ANTI-CORTE)
    * =================================================================
    */
   fmtDateBR: (iso) => {
@@ -153,7 +153,7 @@ const UIRender = {
     const container = document.getElementById('print-report');
     if (!container) return;
     
-    // Funções utilitárias seguras (Previnem TypeError de propriedades indefinidas)
+    // Funções utilitárias seguras
     const v = id => {
       const el = document.getElementById(id);
       if (!el) return '';
@@ -170,8 +170,8 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
-    // Criação de UM ÚNICO BLOCO contínuo para todo o laudo
-    let html = '<div class="pr-page">';
+    // REMOVIDO: `<div class="pr-page">`. AGORA É TUDO UM BLOCO SÓ.
+    let html = '<div style="width: 100%;">';
 
     html += `
       <div class="pr-header-block">
@@ -225,6 +225,7 @@ const UIRender = {
                <div><strong>1.12 Implemento/Carroceria:</strong> ${esc(v('implemento'))}</div>
              </div>`;
 
+    // Desenha as seções de 2 a 13
     if (Array.isArray(sectionsArray)) {
       sectionsArray.forEach(sec => {
         if (sec.n >= 2 && sec.n <= 13) {
@@ -262,7 +263,7 @@ const UIRender = {
       });
     }
 
-    // CONTINUA O FLUXO PARA A SEÇÃO 14 SEM QUEBRAR A DIV PR-PAGE
+    // CONTINUA O FLUXO DIRETO PARA A SEÇÃO 14 (Sem quebrar a DIV principal)
     html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
     
     let hasNC = false;
@@ -333,10 +334,10 @@ const UIRender = {
                </div>
              </div>`;
     
-    html += `</div>`; // Fechamento do bloco contínuo pr-page
+    html += `</div>`; // Fim da grande caixa contínua que engloba o laudo todo
 
-    // Injeta a imagem de rodapé separadamente, uma vez só. 
-    html += UIRender.prFooterHTML(); 
+    // Injeta a imagem do rodapé (o CSS cuida de fazer ela repetir no final das folhas físicas)
+    html += UIRender.prFooterHTML();
 
     container.innerHTML = html;
   },
@@ -355,7 +356,7 @@ const UIRender = {
     const nf = v('nfNumero');
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    let html = '<div class="pr-page">';
+    let html = '<div style="width: 100%;">';
     html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
                <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
              </div>`;
