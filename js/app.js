@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Variáveis de Estado
   let currentRecordId = null;
+  // 🔥 AGORA CADA ITEM GUARDA UM ARRAY DE URLs (antes era 1 string por item)
   let photoUrls = {}; 
   let currentSeq = null;
   let emissionLog = [];
@@ -132,44 +133,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6.2 Tratativa de Upload de Imagens
-    if (e.target.type === 'file' && e.target.files.length > 0) {
+    // Permite VÁRIAS fotos por item: cada seleção é ADICIONADA à lista do
+    // item. O uploadPhoto real (Cloudinary) já gera um public_id único a
+    // cada chamada (ele mesmo usa Date.now() internamente), então é seguro
+    // chamá-lo várias vezes seguidas para o mesmo itemId.
+    if (e.target.type === 'file' && e.target.files && e.target.files.length > 0) {
       if (!currentRecordId) {
         alert("Salve a inspeção em 'Rascunho' antes de anexar fotos para criar o banco de imagens.");
         e.target.value = '';
         return;
       }
 
-      const file = e.target.files[0];
       const itemCell = e.target.closest('.photo-cell');
       const itemId = itemCell.dataset.photoItem;
       const thumbWrap = itemCell.querySelector('.photo-thumb-wrap');
+      const files = Array.from(e.target.files);
 
-      thumbWrap.innerHTML = 'Carregando...';
-
-      try {
-        const url = await StorageService.uploadPhoto(currentRecordId, itemId, file);
-        photoUrls[itemId] = url;
-        thumbWrap.innerHTML = `
-          <div class="photo-thumb">
-            <img src="${url}">
-            <button type="button" class="photo-remove" data-item="${itemId}">x</button>
-          </div>`;
-        
-        const removeBtn = thumbWrap.querySelector('.photo-remove');
-        if (removeBtn) {
-          removeBtn.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            delete photoUrls[itemId];
-            thumbWrap.innerHTML = '';
-          });
-        }
-      } catch (err) {
-        console.error("Erro no upload:", err);
-        alert("Falha ao subir foto: " + err.message);
-        thumbWrap.innerHTML = '';
+      if (!Array.isArray(photoUrls[itemId])) {
+        // Compatibilidade com inspeções antigas salvas com 1 foto (string) por item
+        photoUrls[itemId] = photoUrls[itemId] ? [photoUrls[itemId]] : [];
       }
+
+      const loadingTags = files.map(() => {
+        const tag = document.createElement('div');
+        tag.className = 'photo-thumb';
+        tag.textContent = '…';
+        thumbWrap.appendChild(tag);
+        return tag;
+      });
+
+      for (let i = 0; i < files.length; i++) {
+        try {
+          const url = await StorageService.uploadPhoto(currentRecordId, itemId, files[i]);
+          photoUrls[itemId].push(url);
+        } catch (err) {
+          console.error("Erro no upload:", err);
+          alert("Falha ao subir foto: " + err.message);
+        } finally {
+          loadingTags[i].remove();
+        }
+      }
+
+      renderPhotoThumbs(itemId, thumbWrap);
+      e.target.value = '';
     }
   });
+
+  /**
+   * Redesenha TODAS as miniaturas de um item a partir de photoUrls[itemId] (array).
+   * Cada miniatura tem seu próprio botão de remover.
+   */
+  function renderPhotoThumbs(itemId, thumbWrap) {
+    const urls = photoUrls[itemId] || [];
+    thumbWrap.innerHTML = urls.map((url, idx) => `
+      <div class="photo-thumb">
+        <img src="${url}">
+        <button type="button" class="photo-remove" data-item="${itemId}" data-idx="${idx}">x</button>
+      </div>
+    `).join('');
+
+    thumbWrap.querySelectorAll('.photo-remove').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const idx = parseInt(btn.dataset.idx, 10);
+        photoUrls[itemId].splice(idx, 1);
+        renderPhotoThumbs(itemId, thumbWrap);
+      });
+    });
+  }
 
   function updateGauges() {
     let c = 0, nc = 0, na = 0;
@@ -238,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   /**
    * ==========================================
-   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX
+   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX (MÓDULO SEQUENCIAL CORRIGIDO)
    * ==========================================
    */
 
@@ -271,21 +302,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. CONSTRUTOR DO MENU DE NAVEGAÇÃO
+  // 3. CONSTRUTOR DO MENU DE NAVEGAÇÃO (0 ATÉ 15 EM ORDEM)
   const navMenu = document.getElementById('quick-nav');
   if (navMenu && typeof SECTIONS !== 'undefined') {
     navMenu.innerHTML = '<option value="">Ir para a seção...</option>';
     
-    // Injeta Seção 0 e Seção 1
+    // Injeta Seção 0 e Seção 1 de Cabeçalho Fixos
     navMenu.innerHTML += `<option value="secao-0">0. Identificação da Inspeção</option>`;
     navMenu.innerHTML += `<option value="secao-1">1. Identificação do Veículo</option>`;
     
-    // Injeta as Seções Dinâmicas
+    // Injeta as Seções Dinâmicas (2 até 13)
     SECTIONS.forEach(sec => {
       navMenu.innerHTML += `<option value="secao-${sec.n}">${sec.n}. ${sec.title}</option>`;
     });
     
-    // Injeta as Seções Finais
+    // Injeta as Seções Finais Estáticas (14 e 15)
     navMenu.innerHTML += `<option value="secao-14">14. Registro de Não Conformidades</option>`;
     navMenu.innerHTML += `<option value="secao-15">15. Conclusão da Inspeção</option>`;
 
@@ -342,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.opt, .crit').forEach(el => el.classList.remove('sel'));
     document.querySelectorAll('.class-opt').forEach(el => el.classList.remove('sel-apto', 'sel-restr', 'sel-inapto'));
     
+    // Reseta caixas de seleção da FIPE
     const selM = document.getElementById('fipe-marca');
     const selMod = document.getElementById('fipe-modelo');
     const selA = document.getElementById('fipe-ano');
@@ -349,15 +381,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if(selMod) { selMod.innerHTML = '<option value="">Aguardando Marca...</option>'; selMod.disabled = true; }
     if(selA) { selA.innerHTML = '<option value="">Aguardando Modelo...</option>'; selA.disabled = true; }
 
+    // Reseta as bordas indicadoras da busca por placa
     document.getElementById('chassi').style.border = "";
     document.getElementById('numMotor').style.border = "";
+
+    // Limpa visualmente todas as miniaturas de foto já renderizadas
+    document.querySelectorAll('.photo-thumb-wrap').forEach(w => w.innerHTML = '');
 
     photoUrls = {}; 
     currentSeq = null; 
     updateGauges();
-    
-    // Limpa fotos na tela ao iniciar nova inspeção
-    document.querySelectorAll('.photo-thumb-wrap').forEach(wrap => wrap.innerHTML = '');
     
     if (typeof canvasProvider !== 'undefined') {
       canvasProvider.clear('respIns'); 
@@ -370,14 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state) return;
     currentRecordId = id;
     clearFormUI();
-    
-    // Restaura Textos
     Object.entries(state.text || {}).forEach(([key, val]) => { 
       const el = document.getElementById(key); 
       if (el) el.value = val; 
     });
     
-    // Restaura Checklists
     Object.entries(state.radios || {}).forEach(([name, val]) => {
       const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
       if (input) { 
@@ -397,30 +427,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('status-select').value = state.status || 'rascunho';
-    
-    // Restaura e desenha as Fotos salvas
-    photoUrls = state.photoUrls || {};
-    Object.entries(photoUrls).forEach(([itemId, url]) => {
-      const itemCell = document.querySelector(`.photo-cell[data-photo-item="${itemId}"]`);
-      if (itemCell) {
-        const thumbWrap = itemCell.querySelector('.photo-thumb-wrap');
-        if (thumbWrap) {
-          thumbWrap.innerHTML = `
-            <div class="photo-thumb">
-              <img src="${url}">
-              <button type="button" class="photo-remove" data-item="${itemId}">x</button>
-            </div>`;
-          
-          const removeBtn = thumbWrap.querySelector('.photo-remove');
-          if (removeBtn) {
-            removeBtn.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              delete photoUrls[itemId];
-              thumbWrap.innerHTML = '';
-            });
-          }
-        }
-      }
+
+    // Normaliza fotos antigas (salvas como 1 string por item) para o formato de array
+    const rawPhotos = state.photoUrls || {};
+    photoUrls = {};
+    Object.entries(rawPhotos).forEach(([itemId, val]) => {
+      photoUrls[itemId] = Array.isArray(val) ? val : [val];
+    });
+
+    // Redesenha as miniaturas de cada item que já tem foto salva
+    Object.keys(photoUrls).forEach(itemId => {
+      const cell = document.querySelector(`.photo-cell[data-photo-item="${itemId}"]`);
+      const thumbWrap = cell ? cell.querySelector('.photo-thumb-wrap') : null;
+      if (thumbWrap) renderPhotoThumbs(itemId, thumbWrap);
     });
 
     currentSeq = state.seq || null;
