@@ -63,7 +63,7 @@
     break-after: page;
     min-height: 253mm;
     box-sizing: border-box;
-    padding-bottom: 24mm; /* espaço reservado para o rodapé com onda */
+    padding-bottom: 6mm; /* pequena folga antes da margem, onde o rodapé sangra até a borda */
   }
 
   .pr-page:last-child {
@@ -79,6 +79,24 @@
     right: 0;
     font-size: 8pt;
     color: #888;
+  }
+
+  /* Marca d'água — uma por página (mais confiável que position:fixed no
+     body, que depende do navegador replicar em cada página impressa) */
+  .pr-page::after {
+    content: "";
+    position: absolute;
+    top: 30%;
+    left: 20%;
+    width: 60%;
+    height: 40%;
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/8C19DE15-46A0-476A-8BFE-46193BF7F00D.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    opacity: 0.05;
+    z-index: -1;
+    pointer-events: none;
   }
 
   /* Evita que blocos importantes sejam cortados entre páginas */
@@ -127,6 +145,8 @@
   .pr-field-line {
     font-size: 9.5pt;
     margin-bottom: 3px;
+    padding-bottom: 2px;
+    border-bottom: 1px dotted #ccc;
   }
 
   .pr-field-line strong,
@@ -140,6 +160,8 @@
     font-size: 9.5pt;
     margin-bottom: 3px;
     gap: 28px;
+    padding-bottom: 2px;
+    border-bottom: 1px dotted #ccc;
   }
 
   /* ===== Tabelas do Checklist — sem grade, estilo formulário ===== */
@@ -303,13 +325,17 @@
     margin-top: 2px;
   }
 
-  /* ===== Rodapé Institucional com Onda ===== */
+  /* ===== Rodapé Institucional com Onda =====
+     Estende até a borda física do papel (esquerda, direita e embaixo),
+     usando margens negativas iguais às margens do @page, em vez de ficar
+     restrito à área de conteúdo. */
   .pr-footer {
     position: absolute;
-    bottom: -24mm;
-    left: 0;
-    width: 100%;
-    height: 24mm;
+    bottom: -26mm;
+    left: -16mm;
+    right: -16mm;
+    width: auto;
+    height: 26mm;
     overflow: visible;
   }
 
