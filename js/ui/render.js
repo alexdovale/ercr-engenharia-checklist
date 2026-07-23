@@ -110,6 +110,8 @@ const UIRender = {
     UIRender._injectPhotoStyles();
     container.innerHTML = ''; 
 
+    if (!Array.isArray(sectionsArray)) return;
+
     sectionsArray.forEach(sec => {
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
@@ -117,41 +119,42 @@ const UIRender = {
 
       const head = document.createElement('div');
       head.className = 'sheet-head';
-      head.innerHTML = `<span class="n">${sec.n}</span><h2>${sec.title}</h2>`;
+      head.innerHTML = `<span class="n">${sec.n}</span><h2>${sec.title || ''}</h2>`;
       sheet.appendChild(head);
 
       const body = document.createElement('div');
       body.className = 'sheet-body';
 
-      sec.items.forEach((item, idx) => {
-        const isObj = typeof item === 'object';
-        const text = isObj ? item.text : item;
-        
-        // Trava de segurança para itens especiais
-        const opts = (isObj && item.opts) ? item.opts : [['conforme','Conf.'],['nao_conforme','N.Conf.'],['na','N/A']];
-        const itemId = `s${sec.n}-i${idx}`;
+      if (Array.isArray(sec.items)) {
+        sec.items.forEach((item, idx) => {
+          const isObj = typeof item === 'object';
+          const text = isObj ? item.text : item;
+          
+          const opts = (isObj && item.opts) ? item.opts : [['conforme','Conf.'],['nao_conforme','N.Conf.'],['na','N/A']];
+          const itemId = `s${sec.n}-i${idx}`;
 
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        const numLabel = `${sec.n}.${idx+1}`;
-        
-        row.innerHTML = `
-          <div class="item-text"><span class="item-num">${numLabel}</span>${text}</div>
-          <div class="opts" data-item="${itemId}">
-            ${opts.map(([val, label]) => {
-              const cls = (val === 'conforme' || val === 'realizado') ? 'c' :
-                          (val === 'nao_conforme' || val === 'nao_realizado') ? 'nc' : 'na';
-              return `<label class="opt ${cls}" data-val="${val}"><input type="radio" name="${itemId}" value="${val}">${label}</label>`;
-            }).join('')}
-          </div>
-          <div class="photo-cell" data-photo-item="${itemId}">
-            <button type="button" class="photo-btn" title="Anexar foto">📷 Foto</button>
-            <input type="file" accept="image/*" style="display:none">
-            <div class="photo-thumb-wrap"></div>
-          </div>
-        `;
-        body.appendChild(row);
-      });
+          const row = document.createElement('div');
+          row.className = 'item-row';
+          const numLabel = `${sec.n}.${idx+1}`;
+          
+          row.innerHTML = `
+            <div class="item-text"><span class="item-num">${numLabel}</span>${text}</div>
+            <div class="opts" data-item="${itemId}">
+              ${opts.map(([val, label]) => {
+                const cls = (val === 'conforme' || val === 'realizado') ? 'c' :
+                            (val === 'nao_conforme' || val === 'nao_realizado') ? 'nc' : 'na';
+                return `<label class="opt ${cls}" data-val="${val}"><input type="radio" name="${itemId}" value="${val}">${label}</label>`;
+              }).join('')}
+            </div>
+            <div class="photo-cell" data-photo-item="${itemId}">
+              <button type="button" class="photo-btn" title="Anexar foto">📷 Foto</button>
+              <input type="file" accept="image/*" style="display:none">
+              <div class="photo-thumb-wrap"></div>
+            </div>
+          `;
+          body.appendChild(row);
+        });
+      }
 
       sheet.appendChild(body);
       container.appendChild(sheet);
@@ -177,7 +180,6 @@ const UIRender = {
     return `Nº ${String(seq.number).padStart(4,'0')}/${seq.year}`;
   },
 
-  // NOVO RODAPÉ USANDO A IMAGEM OFICIAL DIRETAMENTE
   prFooterHTML: () => {
     const rodapeUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
     return `
@@ -194,9 +196,9 @@ const UIRender = {
       case 'canvas': 
         return `<img class="pr-signature-img" src="${dadosAssinatura.image}" style="margin: 0 auto;">`;
       case 'icp':
-        return `<div style="font-size: 8pt; font-family: monospace; padding: 5px 0;">Assinado Gov.br: ${dadosAssinatura.metadata.dadosCertificado.nome}</div>`;
+        return `<div style="font-size: 8pt; font-family: monospace; padding: 5px 0;">Assinado Gov.br: ${dadosAssinatura.metadata?.dadosCertificado?.nome || 'Validado'}</div>`;
       case 'remote':
-        return `<div style="font-size: 8pt; font-family: monospace; padding: 5px 0; color: #555;">Assinatura Remota: ${dadosAssinatura.metadata.status}</div>`;
+        return `<div style="font-size: 8pt; font-family: monospace; padding: 5px 0; color: #555;">Assinatura Remota: ${dadosAssinatura.metadata?.status || 'Concluída'}</div>`;
       default:
         return `<div style="padding: 10px 0;"><b>${esc(typedNameFallback) || ''}</b></div>`;
     }
@@ -206,9 +208,20 @@ const UIRender = {
     const container = document.getElementById('print-report');
     if (!container) return;
     
-    const v = id => document.getElementById(id)?.value.trim() || '';
-    const radioVal = name => document.querySelector(`input[name="${name}"]:checked`)?.value || null;
-    const photoSrc = itemId => document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb img`)?.src || null;
+    // Funções utilitárias seguras (Previnem TypeError de propriedades indefinidas)
+    const v = id => {
+      const el = document.getElementById(id);
+      if (!el) return '';
+      return typeof el.value !== 'undefined' ? String(el.value).trim() : String(el.textContent || '').trim();
+    };
+    const radioVal = name => {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : null;
+    };
+    const photoSrc = itemId => {
+      const el = document.querySelector(`[data-photo-item="${itemId}"] .photo-thumb img`);
+      return el ? el.src : null;
+    };
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
@@ -266,44 +279,48 @@ const UIRender = {
                <div><strong>1.12 Implemento/Carroceria:</strong> ${esc(v('implemento'))}</div>
              </div>`;
 
-    sectionsArray.forEach(sec => {
-      if (sec.n >= 2 && sec.n <= 13) {
-        html += `<div class="pr-section-title">${sec.n}. ${esc(sec.title.toUpperCase())}</div>
-                 <table class="pr-table">
-                   <thead>
-                     <tr>
-                       <th class="pr-item-cell">Item</th>
-                       <th class="pr-circle-cell">Conforme</th>
-                       <th class="pr-circle-cell">Não Conforme</th>
-                       <th class="pr-circle-cell">N/A</th>
-                     </tr>
-                   </thead>
-                   <tbody>`;
-        
-        sec.items.forEach((item, idx) => {
-          const itemId = `s${sec.n}-i${idx}`;
-          const val = radioVal(itemId);
-          const photo = photoSrc(itemId);
+    if (Array.isArray(sectionsArray)) {
+      sectionsArray.forEach(sec => {
+        if (sec.n >= 2 && sec.n <= 13) {
+          html += `<div class="pr-section-title">${sec.n}. ${esc((sec.title || '').toUpperCase())}</div>
+                   <table class="pr-table">
+                     <thead>
+                       <tr>
+                         <th class="pr-item-cell">Item</th>
+                         <th class="pr-circle-cell">Conforme</th>
+                         <th class="pr-circle-cell">Não Conforme</th>
+                         <th class="pr-circle-cell">N/A</th>
+                       </tr>
+                     </thead>
+                     <tbody>`;
           
-          html += `<tr>
-            <td>
-              <strong>${sec.n}.${idx+1}</strong> - ${typeof item === 'object' ? esc(item.text) : esc(item)}
-              ${photo ? `<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>` : ''}
-            </td>
-            <td class="pr-circle-cell">${checkCircle(val === 'conforme' || val === 'realizado')}</td>
-            <td class="pr-circle-cell">${checkCircle(val === 'nao_conforme' || val === 'nao_realizado')}</td>
-            <td class="pr-circle-cell">${checkCircle(val === 'na_aplicavel' || val === 'na')}</td>
-          </tr>`;
-        });
-        html += `</tbody></table>`;
-      }
-    });
+          if (Array.isArray(sec.items)) {
+            sec.items.forEach((item, idx) => {
+              const itemId = `s${sec.n}-i${idx}`;
+              const val = radioVal(itemId);
+              const photo = photoSrc(itemId);
+              
+              html += `<tr>
+                <td>
+                  <strong>${sec.n}.${idx+1}</strong> - ${typeof item === 'object' ? esc(item.text) : esc(item)}
+                  ${photo ? `<div class="pr-photo-block"><img class="pr-photo-thumb" src="${photo}"></div>` : ''}
+                </td>
+                <td class="pr-circle-cell">${checkCircle(val === 'conforme' || val === 'realizado')}</td>
+                <td class="pr-circle-cell">${checkCircle(val === 'nao_conforme' || val === 'nao_realizado')}</td>
+                <td class="pr-circle-cell">${checkCircle(val === 'na_aplicavel' || val === 'na')}</td>
+              </tr>`;
+            });
+          }
+          html += `</tbody></table>`;
+        }
+      });
+    }
 
     html += UIRender.prFooterHTML();
     html += `</div>`; 
 
-    // Página de Não Conformidades
-    html += `<div class="pr-page">
+    // Página de Não Conformidades e Conclusão
+    html += `<div class="pr-page" style="page-break-before: always;">
               <div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
     
     let hasNC = false;
@@ -337,7 +354,8 @@ const UIRender = {
         `;
       }
     }
-    if (!hasNC) html += `<div class="pr-field-line">Nenhuma Não Conformidade registrada.</div>`;
+    
+    if (!hasNC) html += `<div class="pr-field-line" style="margin-bottom: 20px;">Nenhuma Não Conformidade registrada.</div>`;
 
     const classFinal = radioVal('classificacao');
     html += `<div class="pr-section-title">15. CONCLUSÃO DA INSPEÇÃO</div>
@@ -347,24 +365,24 @@ const UIRender = {
                 <div class="pr-field-line">${checkCircle(classFinal === 'restricoes')} APTO PARA OPERAÇÃO COM RESTRIÇÕES</div>
                 <div class="pr-field-line">${checkCircle(classFinal === 'inapto')} INAPTO PARA OPERAÇÃO</div>
              </div>
-             <div class="pr-field-line" style="margin-top:10px;">
+             <div class="pr-field-line" style="margin-top:10px; margin-bottom: 30px;">
                <strong>Considerações Técnicas:</strong> ${esc(v('consideracoes'))}
              </div>`;
 
     // Assinaturas Lado a Lado
     html += `<div class="pr-section-title">ASSINATURAS</div>
-             <div class="pr-field-pair" style="border:none; margin-top:20px;">
-               <div style="text-align:center;">
+             <div class="pr-field-pair" style="border:none; margin-top:20px; align-items: flex-end;">
+               <div style="text-align:center; width: 48%;">
                  ${UIRender.renderSignatureOnly(signatureData?.respIns, v('respInsAssinatura'))}
-                 <hr style="border:0; border-bottom:1px solid #000; width:80%; margin:5px auto;">
+                 <hr style="border:0; border-bottom:1px solid #000; width:100%; margin:5px auto;">
                  <strong>RESPONSÁVEL PELA INSPEÇÃO</strong><br>
                  Nome: ${esc(v('respInsNome'))}<br>
                  CREA/Registro: ${esc(v('respInsCrea'))}<br>
                  Data: ${esc(UIRender.fmtDateBR(v('respInsData')))}
                </div>
-               <div style="text-align:center;">
+               <div style="text-align:center; width: 48%;">
                  ${UIRender.renderSignatureOnly(signatureData?.repCli, v('repCliAssinatura'))}
-                 <hr style="border:0; border-bottom:1px solid #000; width:80%; margin:5px auto;">
+                 <hr style="border:0; border-bottom:1px solid #000; width:100%; margin:5px auto;">
                  <strong>REPRESENTANTE DO CLIENTE</strong><br>
                  Nome: ${esc(v('repCliNome'))}<br>
                  Cargo: ${esc(v('repCliCargo'))}<br>
@@ -379,7 +397,13 @@ const UIRender = {
   },
 
   buildReceiptReport: (currentSeq, logoB64, cnpj) => {
-    const v = id => document.getElementById(id)?.value.trim() || '';
+    // Utilizando a mesma função segura de leitura aqui
+    const v = id => {
+      const el = document.getElementById(id);
+      if (!el) return '';
+      return typeof el.value !== 'undefined' ? String(el.value).trim() : String(el.textContent || '').trim();
+    };
+    
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const pagador = v('recPagador') || v('respVeic') || v('empresa');
     const valor = v('valorServico');
