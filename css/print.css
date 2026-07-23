@@ -7,7 +7,7 @@
   /* ===== Configuração da Página A4 ===== */
   @page {
     size: A4;
-    margin: 12mm 14mm 35mm 14mm; /* Margem inferior para acomodar a imagem do rodapé */
+    margin: 12mm 14mm 35mm 14mm; 
   }
 
   * {
@@ -15,7 +15,19 @@
     print-color-adjust: exact !important;
   }
 
-  html, body {
+  /* ==========================================
+     🔥 BLOCO ANTI-CORTE DE PÁGINAS 🔥
+     Força o navegador a desenhar o PDF até o fim, 
+     ignorando limites de altura e flexbox do app.
+     ========================================== */
+  html, body, #print-report {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
     background: #fff !important;
     color: #1a1a1a !important;
     font-family: 'IBM Plex Sans', Arial, sans-serif;
@@ -23,7 +35,6 @@
     line-height: 1.35;
     margin: 0;
     padding: 0;
-    -webkit-font-smoothing: antialiased;
   }
 
   /* Oculta interface do aplicativo no PDF */
@@ -36,11 +47,6 @@
   #fipe-loading, 
   #fipe-error {
     display: none !important;
-  }
-
-  #print-report {
-    display: block !important;
-    width: 100%;
   }
 
   /* ==========================================
@@ -80,28 +86,24 @@
     object-fit: contain;
   }
 
+  /* Esconde o rodapé extra nas quebras para não borrar */
   .pr-page:not(:last-child) .pr-footer {
     display: none;
   }
 
   /* ==========================================
-     3. CORREÇÃO DAS QUEBRAS DE PÁGINA (BURACOS)
+     3. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
      ========================================== */
   .pr-page {
-    position: relative;
-    page-break-after: always;
-    break-after: page;
-  }
-
-  .pr-page:last-child {
-    page-break-after: avoid;
-    break-after: avoid;
+    display: block !important;
+    position: static !important;
   }
 
   .pr-table tr,
   .pr-nc-block,
   .pr-special-row,
-  .pr-photo-block {
+  .pr-photo-block,
+  .pr-field-pair {
     break-inside: avoid;
     page-break-inside: avoid;
   }
