@@ -7,7 +7,7 @@
   /* ===== Configuração da Página A4 ===== */
   @page {
     size: A4;
-    margin: 12mm 14mm 24mm 14mm; /* A margem inferior de 24mm protege o texto para não ficar atrás do rodapé */
+    margin: 12mm 14mm 35mm 14mm; /* Margem inferior ampliada para acomodar a onda preta */
   }
 
   * {
@@ -48,7 +48,7 @@
      ========================================== */
   body::before {
     content: "";
-    position: fixed; /* O segredo para repetir em toda folha impressa */
+    position: fixed; 
     top: 0;
     left: 0;
     width: 100vw;
@@ -57,60 +57,81 @@
     background-size: 60%;
     background-repeat: no-repeat;
     background-position: center;
-    opacity: 0.04; /* Fundo suave */
+    opacity: 0.04; 
     z-index: -1; 
     pointer-events: none;
   }
 
   /* ==========================================
-     2. RODAPÉ FIXO (REPETE EM TODAS AS PÁGINAS)
+     2. RODAPÉ ONDULADO (REPETE EM TODAS AS PÁGINAS)
      ========================================== */
   .pr-footer {
-    position: fixed; /* Gruda o rodapé no final de cada folha de papel */
+    position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 15mm;
-    border-top: 1px solid #999;
-    padding-top: 4px;
+    height: 18mm; 
+    background-color: #000;
+    color: #fff;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    font-size: 7.5pt;
-    background: #fff;
+    flex-direction: column;
+    justify-content: flex-end;
   }
 
-  /* Esconde rodapés duplicados gerados pelo script para evitar letras em negrito/borradas */
   .pr-page:not(:last-child) .pr-footer {
     display: none;
   }
 
-  .pr-footer-brand { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
+  .pr-wave {
+    position: absolute;
+    top: -12mm; 
+    left: 0;
+    width: 100%;
+    height: 12.5mm;
   }
 
-  .pr-footer-brand img { 
-    height: 24px; 
-    object-fit: contain; 
+  .pr-footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 14mm 6mm 14mm; 
+    position: relative;
+    z-index: 2;
   }
 
-  .pr-footer-brand .name { 
-    font-weight: 700; 
-    font-size: 8pt; 
-    color: #000; 
+  .pr-footer-left img {
+    height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1); 
   }
 
-  .pr-footer-brand .sub { 
-    font-size: 7pt; 
-    color: #666; 
+  .pr-footer-right {
+    text-align: right;
+    font-size: 8pt;
+    font-family: 'IBM Plex Sans', sans-serif;
+    letter-spacing: 0.5px;
   }
 
-  .pr-footer-right { 
-    text-align: right; 
-    color: #555; 
-    line-height: 1.4; 
+  .pr-contact-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 5px;
+    justify-content: flex-end;
+  }
+
+  .pr-contact-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .pr-contact-item svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .pr-website {
+    font-weight: 500;
   }
 
   /* ==========================================
@@ -127,7 +148,6 @@
     break-after: avoid;
   }
 
-  /* Permite que a tabela quebre de página, mas proíbe quebrar a LINHA da tabela no meio */
   .pr-table tr,
   .pr-nc-block,
   .pr-special-row,
@@ -136,7 +156,6 @@
     page-break-inside: avoid;
   }
 
-  /* Amarra o título da seção à sua respectiva tabela para não ficar sozinho no final da página */
   .pr-section-title {
     break-after: avoid;
     page-break-after: avoid;
