@@ -11,73 +11,18 @@ const UIRender = {
    * =================================================================
    */
   _injectPhotoStyles: () => {
-    if (document.getElementById('ui-photo-styles')) return; // já injetado
+    if (document.getElementById('ui-photo-styles')) return; 
     const style = document.createElement('style');
     style.id = 'ui-photo-styles';
     style.textContent = `
       .photo-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-
-      .photo-btn {
-        border: 1px solid #ccc;
-        background: #f5f5f5;
-        border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 13px;
-        cursor: pointer;
-        white-space: nowrap;
-      }
+      .photo-btn { border: 1px solid #ccc; background: #f5f5f5; border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
       .photo-btn:hover { background: #ececec; }
-
-      /* Miniatura no FORMULÁRIO (tela) - tamanho bom para leitura */
       .photo-thumb-wrap .photo-thumb { position: relative; display: inline-block; }
-      .photo-thumb-wrap .photo-thumb img {
-        width: 160px;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        cursor: zoom-in;
-        display: block;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-      }
-      .photo-thumb-wrap .photo-remove {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: #b00020;
-        color: #fff;
-        border: 2px solid #fff;
-        font-size: 13px;
-        line-height: 1;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-      }
-
-      /* Lightbox para ver a foto em tamanho grande */
-      .photo-lightbox {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        cursor: zoom-out;
-        padding: 24px;
-      }
-      .photo-lightbox img {
-        max-width: 90vw;
-        max-height: 90vh;
-        object-fit: contain;
-        border-radius: 4px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-      }
+      .photo-thumb-wrap .photo-thumb img { width: 160px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #ccc; cursor: zoom-in; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+      .photo-thumb-wrap .photo-remove { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #b00020; color: #fff; border: 2px solid #fff; font-size: 13px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+      .photo-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; cursor: zoom-out; padding: 24px; }
+      .photo-lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
     `;
     document.head.appendChild(style);
   },
@@ -225,6 +170,7 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
+    // Criação de UM ÚNICO BLOCO contínuo para todo o laudo
     let html = '<div class="pr-page">';
 
     html += `
@@ -316,12 +262,8 @@ const UIRender = {
       });
     }
 
-    html += UIRender.prFooterHTML();
-    html += `</div>`; 
-
-    // Página de Não Conformidades e Conclusão
-    html += `<div class="pr-page" style="page-break-before: always;">
-              <div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
+    // CONTINUA O FLUXO PARA A SEÇÃO 14 SEM QUEBRAR A DIV PR-PAGE
+    html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
     
     let hasNC = false;
     for(let i=1; i<=3; i++){
@@ -357,6 +299,7 @@ const UIRender = {
     
     if (!hasNC) html += `<div class="pr-field-line" style="margin-bottom: 20px;">Nenhuma Não Conformidade registrada.</div>`;
 
+    // SEÇÃO 15
     const classFinal = radioVal('classificacao');
     html += `<div class="pr-section-title">15. CONCLUSÃO DA INSPEÇÃO</div>
              <div class="pr-nc-block" style="border-left-color: #111;">
@@ -369,7 +312,7 @@ const UIRender = {
                <strong>Considerações Técnicas:</strong> ${esc(v('consideracoes'))}
              </div>`;
 
-    // Assinaturas Lado a Lado
+    // ASSINATURAS
     html += `<div class="pr-section-title">ASSINATURAS</div>
              <div class="pr-field-pair" style="border:none; margin-top:20px; align-items: flex-end;">
                <div style="text-align:center; width: 48%;">
@@ -390,14 +333,15 @@ const UIRender = {
                </div>
              </div>`;
     
-    html += UIRender.prFooterHTML();
-    html += `</div>`; 
+    html += `</div>`; // Fechamento do bloco contínuo pr-page
+
+    // Injeta a imagem de rodapé separadamente, uma vez só. 
+    html += UIRender.prFooterHTML(); 
 
     container.innerHTML = html;
   },
 
   buildReceiptReport: (currentSeq, logoB64, cnpj) => {
-    // Utilizando a mesma função segura de leitura aqui
     const v = id => {
       const el = document.getElementById(id);
       if (!el) return '';
@@ -432,8 +376,9 @@ const UIRender = {
     </div>`;
 
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
+    html += `</div>`;
+
     html += UIRender.prFooterHTML();
-    html += '</div>';
 
     const container = document.getElementById('print-report');
     if (container) container.innerHTML = html;
