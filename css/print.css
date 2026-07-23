@@ -1,14 +1,13 @@
 /**
  * css/print.css
  * Estilos otimizados para Impressão e Geração de PDF (Padrão ERCR Engenharia)
- * Versão revisada — hierarquia visual, espaçamento e consistência de marca
  */
 
 @media print {
   /* ===== Configuração da Página A4 ===== */
   @page {
     size: A4;
-    margin: 12mm 14mm 24mm 14mm; /* margem inferior maior para acomodar o rodapé com folga */
+    margin: 12mm 14mm 24mm 14mm; /* A margem inferior de 24mm protege o texto para não ficar atrás do rodapé */
   }
 
   * {
@@ -27,32 +26,100 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Oculta elementos de tela que não devem sair no PDF */
-  header.dash,
-  .actions,
-  #screen-lock,
-  #screen-list,
-  #screen-form, /* Correção: Oculta o formulário de preenchimento no PDF */
-  .dash-controls,
-  #fipe-loading,
+  /* Oculta interface do aplicativo no PDF */
+  header.dash, 
+  .actions, 
+  #screen-lock, 
+  #screen-list, 
+  #screen-form, 
+  .dash-controls, 
+  #fipe-loading, 
   #fipe-error {
     display: none !important;
   }
 
-  /* Exibe o contêiner de relatório de impressão */
   #print-report {
     display: block !important;
     width: 100%;
   }
 
-  /* ===== Estrutura de cada Página Impressa ===== */
+  /* ==========================================
+     1. MARCA D'ÁGUA (REPETE EM TODAS AS PÁGINAS)
+     ========================================== */
+  body::before {
+    content: "";
+    position: fixed; /* O segredo para repetir em toda folha impressa */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png');
+    background-size: 60%;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.04; /* Fundo suave */
+    z-index: -1; 
+    pointer-events: none;
+  }
+
+  /* ==========================================
+     2. RODAPÉ FIXO (REPETE EM TODAS AS PÁGINAS)
+     ========================================== */
+  .pr-footer {
+    position: fixed; /* Gruda o rodapé no final de cada folha de papel */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 15mm;
+    border-top: 1px solid #999;
+    padding-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-size: 7.5pt;
+    background: #fff;
+  }
+
+  /* Esconde rodapés duplicados gerados pelo script para evitar letras em negrito/borradas */
+  .pr-page:not(:last-child) .pr-footer {
+    display: none;
+  }
+
+  .pr-footer-brand { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+  }
+
+  .pr-footer-brand img { 
+    height: 24px; 
+    object-fit: contain; 
+  }
+
+  .pr-footer-brand .name { 
+    font-weight: 700; 
+    font-size: 8pt; 
+    color: #000; 
+  }
+
+  .pr-footer-brand .sub { 
+    font-size: 7pt; 
+    color: #666; 
+  }
+
+  .pr-footer-right { 
+    text-align: right; 
+    color: #555; 
+    line-height: 1.4; 
+  }
+
+  /* ==========================================
+     3. CORREÇÃO DAS QUEBRAS DE PÁGINA (BURACOS)
+     ========================================== */
   .pr-page {
     position: relative;
     page-break-after: always;
     break-after: page;
-    min-height: 263mm; /* ajustado à margem inferior de 24mm */
-    box-sizing: border-box;
-    padding-bottom: 22mm; /* espaço reservado para o rodapé fixo */
   }
 
   .pr-page:last-child {
@@ -60,63 +127,19 @@
     break-after: avoid;
   }
 
-  /* ===== MARCA D'ÁGUA NO FUNDO DE TODAS AS PÁGINAS ===== */
-  .pr-page::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60%; 
-    height: 60%;
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/8C19DE15-46A0-476A-8BFE-46193BF7F00D.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.05; /* Transparência bem suave (5%) */
-    z-index: 0; 
-    pointer-events: none;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  /* Evita que blocos importantes sejam cortados entre páginas */
+  /* Permite que a tabela quebre de página, mas proíbe quebrar a LINHA da tabela no meio */
+  .pr-table tr,
   .pr-nc-block,
-  .pr-table,
   .pr-special-row,
-  .pr-section-title {
+  .pr-photo-block {
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  /* ===== Cabeçalho / Identificação do Relatório ===== */
-  .pr-header-block {
-    border-bottom: 2px solid #111;
-    padding-bottom: 8px;
-    margin-bottom: 14px;
-  }
-
-  .pr-title {
-    font-size: 14pt;
-    font-weight: 700;
-    text-align: center;
-    text-transform: uppercase;
-    margin: 0 0 3px 0;
-    letter-spacing: 0.6px;
-    color: #000;
-  }
-
-  .pr-seq {
-    text-align: center;
-    font-size: 9.5pt;
-    font-weight: 500;
-    margin: 0 0 10px 0;
-    color: #444;
-    letter-spacing: 0.3px;
-  }
-
-  /* ===== Títulos de Seção ===== */
+  /* Amarra o título da seção à sua respectiva tabela para não ficar sozinho no final da página */
   .pr-section-title {
+    break-after: avoid;
+    page-break-after: avoid;
     background-color: #111 !important;
     color: #fff !important;
     font-size: 9pt;
@@ -129,242 +152,197 @@
     border-radius: 2px;
   }
 
-  /* ===== Linhas e Grades de Dados ===== */
-  .pr-field-line {
-    font-size: 9pt;
-    margin-bottom: 4px;
-    padding-bottom: 2px;
-    border-bottom: 1px dotted #ddd;
+  /* ===== ESTILOS GERAIS DO DOCUMENTO ===== */
+  .pr-header-block { 
+    border-bottom: 2px solid #111; 
+    padding-bottom: 8px; 
+    margin-bottom: 14px; 
   }
 
-  .pr-field-line strong,
-  .pr-field-pair strong {
-    font-weight: 600;
-    color: #000;
+  .pr-title { 
+    font-size: 14pt; 
+    font-weight: 700; 
+    text-align: center; 
+    text-transform: uppercase; 
+    margin: 0 0 3px 0; 
+    letter-spacing: 0.6px; 
+    color: #000; 
   }
 
-  .pr-field-pair {
-    display: flex;
-    justify-content: space-between;
-    font-size: 9pt;
-    margin-bottom: 4px;
-    gap: 18px;
-    padding-bottom: 2px;
-    border-bottom: 1px dotted #ddd;
+  .pr-seq { 
+    text-align: center; 
+    font-size: 9.5pt; 
+    font-weight: 500; 
+    margin: 0 0 10px 0; 
+    color: #444; 
+    letter-spacing: 0.3px; 
   }
 
-  .pr-field-pair > div {
-    flex: 1;
+  .pr-field-line { 
+    font-size: 9pt; 
+    margin-bottom: 4px; 
+    padding-bottom: 2px; 
+    border-bottom: 1px dotted #ddd; 
   }
 
-  /* ===== Tabelas do Checklist ===== */
-  .pr-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 10px;
-    font-size: 8.5pt;
+  .pr-field-line strong, 
+  .pr-field-pair strong { 
+    font-weight: 600; 
+    color: #000; 
   }
 
-  .pr-table th {
-    background-color: #222 !important;
-    color: #fff !important;
-    font-weight: 700;
-    text-align: left;
-    padding: 4px 8px;
-    border: 1px solid #222;
-    text-transform: uppercase;
-    font-size: 8pt;
-    letter-spacing: 0.3px;
+  .pr-field-pair { 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 9pt; 
+    margin-bottom: 4px; 
+    gap: 18px; 
+    padding-bottom: 2px; 
+    border-bottom: 1px dotted #ddd; 
   }
 
-  .pr-table td {
-    padding: 4px 8px;
-    border: 1px solid #ccc;
-    vertical-align: middle;
+  .pr-field-pair > div { 
+    flex: 1; 
   }
 
-  .pr-table tr:nth-child(even) td {
-    background-color: #f7f7f7 !important;
+  .pr-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-bottom: 10px; 
+    font-size: 8.5pt; 
   }
 
-  .pr-item-cell {
-    width: 65%;
+  .pr-table th { 
+    background-color: #222 !important; 
+    color: #fff !important; 
+    font-weight: 700; 
+    text-align: left; 
+    padding: 4px 8px; 
+    border: 1px solid #222; 
+    text-transform: uppercase; 
+    font-size: 8pt; 
+    letter-spacing: 0.3px; 
   }
 
-  .pr-circle-cell {
-    text-align: center;
-    width: 12%;
+  .pr-table td { 
+    padding: 4px 8px; 
+    border: 1px solid #ccc; 
+    vertical-align: middle; 
   }
 
-  /* ===== Círculos e Caixas de Marcação de Conformidade ===== */
-  .pr-circle {
-    display: inline-block;
-    width: 11px;
-    height: 11px;
-    border: 1.5px solid #000;
-    border-radius: 50%;
-    vertical-align: middle;
+  .pr-table tr:nth-child(even) td { 
+    background-color: #f7f7f7 !important; 
   }
 
-  .pr-circle.filled {
-    background-color: #000 !important;
+  .pr-item-cell { 
+    width: 65%; 
   }
 
-  .pr-checkbox {
-    display: inline-block;
-    width: 11px;
-    height: 11px;
-    border: 1.5px solid #000;
-    margin-right: 6px;
-    vertical-align: middle;
-    border-radius: 2px;
+  .pr-circle-cell { 
+    text-align: center; 
+    width: 12%; 
   }
 
-  .pr-checkbox.checked {
-    background-color: #000 !important;
+  .pr-circle { 
+    display: inline-block; 
+    width: 11px; 
+    height: 11px; 
+    border: 1.5px solid #000; 
+    border-radius: 50%; 
+    vertical-align: middle; 
   }
 
-  /* ===== Blocos Especiais (itens com múltiplas opções) ===== */
-  .pr-special-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 8.5pt;
-    padding: 5px 8px;
-    border: 1px solid #ddd;
-    border-left: 3px solid #111;
-    margin-bottom: 4px;
-    border-radius: 2px;
+  .pr-circle.filled { 
+    background-color: #000 !important; 
   }
 
-  .pr-special-opts {
-    display: flex;
-    gap: 12px;
-    font-size: 8pt;
+  .pr-checkbox { 
+    display: inline-block; 
+    width: 11px; 
+    height: 11px; 
+    border: 1.5px solid #000; 
+    margin-right: 6px; 
+    vertical-align: middle; 
+    border-radius: 2px; 
   }
 
-  .pr-special-opts span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  .pr-checkbox.checked { 
+    background-color: #000 !important; 
   }
 
-  /* ===== Seção de Não Conformidades ===== */
-  .pr-nc-block {
-    border: 1px solid #bbb;
-    border-left: 4px solid #b00020;
-    padding: 8px 10px;
-    margin-bottom: 8px;
-    font-size: 8.5pt;
-    border-radius: 2px;
-    background-color: #fff !important;
+  .pr-special-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    font-size: 8.5pt; 
+    padding: 5px 8px; 
+    border: 1px solid #ddd; 
+    border-left: 3px solid #111; 
+    margin-bottom: 4px; 
+    border-radius: 2px; 
   }
 
-  .pr-nc-block h4 {
-    margin: 0 0 6px 0;
-    font-size: 9pt;
-    font-weight: 700;
-    color: #b00020;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+  .pr-special-opts { 
+    display: flex; 
+    gap: 12px; 
+    font-size: 8pt; 
   }
 
-  .pr-crit-row {
-    display: flex;
-    gap: 15px;
-    margin-top: 6px;
-    font-size: 8pt;
-    color: #333;
+  .pr-special-opts span { 
+    display: flex; 
+    align-items: center; 
+    gap: 4px; 
   }
 
-  /* ===== Miniaturas de Fotos =====
-     Bloco próprio, em largura de página, para permitir tamanho de leitura real
-     (a foto de uma avaria/peça precisa ser visível, não decorativa). */
-  .pr-photo-block {
-    margin-top: 6px;
-    break-inside: avoid;
-    page-break-inside: avoid;
+  .pr-nc-block { 
+    border: 1px solid #bbb; 
+    border-left: 4px solid #b00020; 
+    padding: 8px 10px; 
+    margin-bottom: 8px; 
+    font-size: 8.5pt; 
+    border-radius: 2px; 
+    background-color: #fff !important; 
   }
 
-  .pr-photo-thumb {
-    display: block;
-    width: 100%;
-    max-width: 260px;
-    max-height: 190px;
-    object-fit: cover;
-    margin-top: 4px;
-    border: 1px solid #999;
-    border-radius: 3px;
+  .pr-nc-block h4 { 
+    margin: 0 0 6px 0; 
+    font-size: 9pt; 
+    font-weight: 700; 
+    color: #b00020; 
+    border-bottom: 1px solid #eee; 
+    padding-bottom: 3px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.3px; 
   }
 
-  /* Quando a foto está dentro de uma célula de tabela estreita, ainda assim
-     garante espaço suficiente para não parecer um selo ilegível */
-  .pr-item-cell .pr-photo-block {
-    max-width: 220px;
+  .pr-crit-row { 
+    display: flex; 
+    gap: 15px; 
+    margin-top: 6px; 
+    font-size: 8pt; 
+    color: #333; 
   }
 
-  /* ===== Assinaturas ===== */
-  .pr-signature-img {
-    max-height: 45px;
-    max-width: 200px;
-    object-fit: contain;
-    display: block;
-    margin-top: 3px;
+  .pr-photo-thumb { 
+    display: block; 
+    width: 100%; 
+    max-width: 260px; 
+    max-height: 190px; 
+    object-fit: cover; 
+    margin-top: 4px; 
+    border: 1px solid #999; 
+    border-radius: 3px; 
   }
 
-  /* ===== Rodapé Institucional Fixo ===== */
-  .pr-footer {
-    position: absolute;
-    bottom: -22mm; /* alinhado ao padding-bottom de .pr-page */
-    left: 0;
-    width: 100%;
-    height: 18mm;
-    border-top: 1px solid #999;
-    padding-top: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 7.5pt;
-    background: #fff;
+  .pr-item-cell .pr-photo-block { 
+    max-width: 220px; 
   }
 
-  .pr-footer-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .pr-footer-brand img {
-    height: 24px;
-    object-fit: contain;
-  }
-
-  .pr-footer-brand .name {
-    font-weight: 700;
-    font-size: 8pt;
-    color: #000;
-  }
-
-  .pr-footer-brand .sub {
-    font-size: 7pt;
-    color: #666;
-  }
-
-  .pr-footer-right {
-    text-align: right;
-    color: #555;
-    line-height: 1.4;
-  }
-
-  /* Numeração de página automática (suportado por navegadores baseados em Chromium) */
-  .pr-page::after {
-    content: "Página " counter(page) " de " counter(pages);
-    position: absolute;
-    bottom: -20mm;
-    right: 0;
-    font-size: 7pt;
-    color: #888;
+  .pr-signature-img { 
+    max-height: 45px; 
+    max-width: 200px; 
+    object-fit: contain; 
+    display: block; 
+    margin-top: 3px; 
   }
 }
