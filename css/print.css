@@ -385,7 +385,10 @@
   .pr-footer-right {
     text-align: right;
     color: #fff;
-    font-size: 7.5pt;
-    line-height: 1.5;
+    font-size: 7pt;
+    line-height: 1.45;
+    max-width: 48%;
+    overflow-wrap: break-word;
+    flex-shrink: 0;
   }
 }
