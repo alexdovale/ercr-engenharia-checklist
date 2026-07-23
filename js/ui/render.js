@@ -238,8 +238,9 @@ const UIRender = {
   },
 
   prFooterHTML: (logoB64, cnpj) => {
-    // Utilizando o link RAW direto do GitHub
-    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+    // Ícone puro (sem caixa preta / sem texto embutido), separado da logo
+    // "completa" usada em outras telas do app.
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png';
     return `
     <div class="pr-footer">
       <svg class="pr-wave-svg" viewBox="0 0 1000 140" preserveAspectRatio="none">
@@ -254,6 +255,7 @@ const UIRender = {
           </div>
         </div>
         <div class="pr-footer-right">
+          CNPJ ${cnpj}<br>
           (21) 96414-6270 &nbsp;·&nbsp; ERCR.ENGENHARIA<br>
           WWW.ERCRENGENHARIA.COM.BR
         </div>
@@ -272,7 +274,7 @@ const UIRender = {
     const photoSrcs = itemId => Array.from(document.querySelectorAll(`[data-photo-item="${itemId}"] .photo-thumb img`)).map(img => img.src);
     const photoGalleryHtml = urls => urls.length ? `<div class="pr-photo-block">${urls.map(src => `<img class="pr-photo-thumb" src="${src}">`).join('')}</div>` : '';
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png';
 
     let html = '<div class="pr-page">';
 
@@ -417,7 +419,7 @@ const UIRender = {
     const valor = v('valorServico');
     const forma = v('formaPagamento');
     const nf = v('nfNumero');
-    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png';
 
     let html = '<div class="pr-page">';
 
