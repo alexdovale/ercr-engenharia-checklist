@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assinatura Digital - ERCR Engenharia</title>
+  
+  <!-- Fonte -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Estilos baseados na sua identidade visual */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'IBM Plex Sans', sans-serif;
+      background-color: #f5f5f5;
+      color: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: #000;
+      width: 100%;
+      padding: 20px 0;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    header img {
+      max-width: 180px;
+    }
+
+    .container {
+      background-color: #fff;
+      width: 90%;
+      max-width: 500px;
+      margin: 30px auto;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      color: #111;
+    }
+
+    p {
+      color: #555;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+
+    /* Área do Canvas (Quadro de Assinatura) */
+    .canvas-container {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      background-color: #fafafa;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 250px;
+      cursor: crosshair;
+      touch-action: none; /* Previne que a tela role no celular enquanto assina */
+    }
+
+    /* Botões */
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn-clear {
+      background-color: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-clear:hover {
+      background-color: #ccc;
+    }
+
+    .btn-submit {
+      background-color: #000;
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-submit:hover {
+      background-color: #222;
+    }
+
+    .success-msg {
+      display: none;
+      color: #2e7d32;
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <!-- Substitua pelo link raw da versão clara da sua logo, se tiver. Usando a padrão por enquanto -->
+    <img src="https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png" style="filter: brightness(0) invert(1);" alt="ERCR Engenharia">
+  </header>
+
+  <div class="container">
+    <h2>Assinatura do Laudo</h2>
+    <p>Por favor, assine no quadro abaixo para validar o documento de inspeção veicular.</p>
+
+    <div class="canvas-container">
+      <canvas id="signature-pad"></canvas>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-clear" id="btn-clear">Limpar</button>
+      <button class="btn-submit" id="btn-submit">Enviar Assinatura</button>
+    </div>
+
+    <div class="success-msg" id="success-msg">
+      ✅ Assinatura enviada com sucesso! Você já pode fechar esta página.
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Captura o ID da inspeção na URL (ex: assinar.html?id=5CKqoQjcy)
+      const urlParams = new URLSearchParams(window.location.search);
+      const inspectionId = urlParams.get('id');
+
+      if (!inspectionId) {
+        alert("Erro: ID da inspeção não encontrado no link.");
+        document.getElementById('btn-submit').disabled = true;
+      }
+
+      // 2. Lógica do Canvas (Desenho da Assinatura)
+      const canvas = document.getElementById('signature-pad');
+      const ctx = canvas.getContext('2d');
+      let isDrawing = false;
+
+      // Ajusta o tamanho interno do canvas para corresponder ao CSS
+      function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      // Configuração da caneta
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#000';
+
+      function getCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches && e.touches.length > 0) {
+          return {
+            x: e.touches[0].clientX - rect.left,
+            y: e.touches[0].clientY - rect.top
+          };
+        }
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+
+      function startDrawing(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const coords = getCoordinates(e);
+        ctx.beginPath();
+        ctx.moveTo(coords.x, coords.y);
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const coords = getCoordinates(e);
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+      }
+
+      function stopDrawing() {
+        isDrawing = false;
+        ctx.closePath();
+      }
+
+      // Eventos de Mouse
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+
+      // Eventos de Touch (Celular)
+      canvas.addEventListener('touchstart', startDrawing, { passive: false });
+      canvas.addEventListener('touchmove', draw, { passive: false });
+      canvas.addEventListener('touchend', stopDrawing);
+
+      // 3. Botão Limpar
+      document.getElementById('btn-clear').addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+
+      // 4. Botão Enviar
+      document.getElementById('btn-submit').addEventListener('click', async () => {
+        // Verifica se o canvas está em branco
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        if (canvas.toDataURL() === blank.toDataURL()) {
+          alert("Por favor, assine no quadro antes de enviar.");
+          return;
+        }
+
+        // Transforma o desenho em uma imagem Base64
+        const signatureImage = canvas.toDataURL('image/png');
+
+        try {
+          // Muda o texto do botão para loading
+          const btnSubmit = document.getElementById('btn-submit');
+          btnSubmit.textContent = "Enviando...";
+          btnSubmit.disabled = true;
+
+          // ==============================================================
+          // 🔥 INTEGRAÇÃO COM O FIREBASE AQUI 🔥
+          // Aqui você precisará atualizar o documento no Firestore usando o 'inspectionId'
+          // Exemplo lógico do que precisa acontecer:
+          // 
+          // await updateDoc(doc(db, "inspections", inspectionId), {
+          //   "signatures.repCli.image": signatureImage,
+          //   "signatures.repCli.methodUsed": "remote",
+          //   "signatures.repCli.metadata.status": "Concluída remotamente"
+          // });
+          // ==============================================================
+
+          // Simulação de tempo de rede (remover após integrar o Firebase de verdade)
+          await new Promise(r => setTimeout(r, 1000)); 
+
+          // Sucesso
+          document.querySelector('.canvas-container').style.display = 'none';
+          document.querySelector('.btn-group').style.display = 'none';
+          document.getElementById('success-msg').style.display = 'block';
+
+        } catch (error) {
+          console.error(error);
+          alert("Erro ao enviar assinatura. Tente novamente.");
+          document.getElementById('btn-submit').textContent = "Enviar Assinatura";
+          document.getElementById('btn-submit').disabled = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
