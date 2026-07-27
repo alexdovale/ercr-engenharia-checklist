@@ -133,10 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6.2 Tratativa de Upload de Imagens
-    // Permite VÁRIAS fotos por item: cada seleção é ADICIONADA à lista do
-    // item. O uploadPhoto real (Cloudinary) já gera um public_id único a
-    // cada chamada (ele mesmo usa Date.now() internamente), então é seguro
-    // chamá-lo várias vezes seguidas para o mesmo itemId.
     if (e.target.type === 'file' && e.target.files && e.target.files.length > 0) {
       if (!currentRecordId) {
         alert("Salve a inspeção em 'Rascunho' antes de anexar fotos para criar o banco de imagens.");
@@ -150,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const files = Array.from(e.target.files);
 
       if (!Array.isArray(photoUrls[itemId])) {
-        // Compatibilidade com inspeções antigas salvas com 1 foto (string) por item
         photoUrls[itemId] = photoUrls[itemId] ? [photoUrls[itemId]] : [];
       }
 
@@ -179,10 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /**
-   * Redesenha TODAS as miniaturas de um item a partir de photoUrls[itemId] (array).
-   * Cada miniatura tem seu próprio botão de remover.
-   */
   function renderPhotoThumbs(itemId, thumbWrap) {
     const urls = photoUrls[itemId] || [];
     thumbWrap.innerHTML = urls.map((url, idx) => `
@@ -267,12 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  /**
-   * ==========================================
-   * ROTINAS EXTRAS E NAVEGAÇÃO DE UX (MÓDULO SEQUENCIAL CORRIGIDO)
-   * ==========================================
-   */
-
   // 1. LIMPAR ASSINATURAS (Desenho e Texto)
   document.querySelectorAll('.sig-clear').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -361,11 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /**
-   * ==========================================
-   * FUNÇÕES AUXILIARES DE ESTADO (UI)
-   * ==========================================
-   */
   function clearFormUI() {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
@@ -448,5 +428,54 @@ document.addEventListener('DOMContentLoaded', () => {
     screenForm.style.display = '';
     updateGauges();
   }
+
+  // ==========================================
+  // DISPARO DE ASSINATURA VIA WHATSAPP (FIREBASE)
+  // ==========================================
+  screenForm.addEventListener('change', (e) => {
+    // Ajuste 'remote' para o valor exato (value) do botão no seu index.html
+    if (e.target.type === 'radio' && e.target.value === 'remote') {
+      
+      // 1. Verifica se a inspeção já foi salva no Firebase e tem um ID
+      if (!currentRecordId) {
+        alert("Por favor, clique em 'Salvar' (como Rascunho) antes de solicitar a assinatura remota. Precisamos gerar um ID para o link do cliente!");
+        
+        // Volta para 'canvas' para não bugar a interface
+        const canvasRadio = document.querySelector('input[type="radio"][value="canvas"]');
+        if (canvasRadio) canvasRadio.checked = true;
+        return;
+      }
+
+      // 2. Captura os dados da tela
+      const telefoneInput = document.getElementById('telefone');
+      const nomeInput = document.getElementById('repCliNome') || document.getElementById('respVeic');
+      const placaInput = document.getElementById('placa');
+
+      const telefone = telefoneInput ? telefoneInput.value.replace(/\D/g, '') : '';
+      const nome = nomeInput && nomeInput.value ? nomeInput.value.trim() : 'Cliente';
+      const placa = placaInput && placaInput.value ? placaInput.value.trim() : 'Veículo';
+
+      // 3. Trava do telefone
+      if (!telefone || telefone.length < 10) {
+        alert('Por favor, preencha um número de telefone válido no campo "Telefone" antes de solicitar a assinatura.');
+        const canvasRadio = document.querySelector('input[type="radio"][value="canvas"]');
+        if (canvasRadio) canvasRadio.checked = true;
+        return;
+      }
+
+      // 4. Monta o link inteligente do Firebase usando a URL raiz do seu site
+      // Isso criará algo como: https://sua-url-do-firebase.com/assinar.html?id=XYZ123
+      const urlBase = window.location.origin;
+      const linkAssinatura = `${urlBase}/assinar.html?id=${currentRecordId}`; 
+      
+      // 5. Monta e dispara a mensagem pro WhatsApp
+      const mensagem = `Olá, ${nome}.\n\nSegue o link para assinatura digital do laudo de inspeção do veículo placa *${placa}*.\n\nPor favor, acesse o link abaixo para conferir e assinar:\n${linkAssinatura}\n\nAtenciosamente,\nERCR Engenharia Mecânica.`;
+
+      const mensagemCodificada = encodeURIComponent(mensagem);
+      const urlWhatsapp = `https://wa.me/55${telefone}?text=${mensagemCodificada}`;
+      
+      window.open(urlWhatsapp, '_blank');
+    }
+  });
 
 });
