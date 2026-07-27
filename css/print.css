@@ -1,6 +1,6 @@
 /**
  * js/render.js
- * Gerenciador de Renderização da Interface e do PDF (Padrão ERCR Engenharia)
+ * Gerenciador de Renderização da Interface e do PDF (Impressão Padrão ERCR)
  */
 
 const UIRender = {
@@ -181,6 +181,7 @@ const UIRender = {
   },
 
   prFooterHTML: () => {
+    // 🔴 IMAGEM NOVA DO RODAPÉ (RAW)
     const rodapeUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
     return `
     <div class="pr-footer">
@@ -208,7 +209,6 @@ const UIRender = {
     const container = document.getElementById('print-report');
     if (!container) return;
     
-    // Funções utilitárias seguras (Previnem TypeError de propriedades indefinidas)
     const v = id => {
       const el = document.getElementById(id);
       if (!el) return '';
@@ -225,16 +225,15 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
-    // Link RAW da logo para injetar no cabeçalho
-    const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+    // 🔴 IMAGEM DA LOGO CENTRAL (RAW)
+    const logoTopoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    // Criação de UM ÚNICO BLOCO contínuo para evitar cortes
-    let html = '<div style="width: 100%;">';
+    let html = '<div class="pr-page">';
 
-    // Adiciona a Logo Centralizada acima do título
+    // 🔴 ADIÇÃO DA LOGO AQUI NO CABEÇALHO
     html += `
-      <div class="pr-header-block">
-        <img class="pr-top-logo" src="${logoUrl}" alt="ERCR Engenharia">
+      <div class="pr-header-block" style="text-align: center;">
+        <img src="${logoTopoUrl}" style="max-width: 220px; height: auto; margin-bottom: 15px;" alt="Logo ERCR">
         <h1 class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</h1>
         ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
       </div>
@@ -322,8 +321,12 @@ const UIRender = {
       });
     }
 
-    // CONTINUA O FLUXO DIRETO PARA A SEÇÃO 14 (Sem quebrar a DIV principal)
-    html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
+    html += UIRender.prFooterHTML();
+    html += `</div>`; 
+
+    // Página de Não Conformidades e Conclusão
+    html += `<div class="pr-page" style="page-break-before: always;">
+              <div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
     
     let hasNC = false;
     for(let i=1; i<=3; i++){
@@ -359,7 +362,6 @@ const UIRender = {
     
     if (!hasNC) html += `<div class="pr-field-line" style="margin-bottom: 20px;">Nenhuma Não Conformidade registrada.</div>`;
 
-    // SEÇÃO 15
     const classFinal = radioVal('classificacao');
     html += `<div class="pr-section-title">15. CONCLUSÃO DA INSPEÇÃO</div>
              <div class="pr-nc-block" style="border-left-color: #111;">
@@ -372,7 +374,7 @@ const UIRender = {
                <strong>Considerações Técnicas:</strong> ${esc(v('consideracoes'))}
              </div>`;
 
-    // ASSINATURAS
+    // Assinaturas Lado a Lado
     html += `<div class="pr-section-title">ASSINATURAS</div>
              <div class="pr-field-pair" style="border:none; margin-top:20px; align-items: flex-end;">
                <div style="text-align:center; width: 48%;">
@@ -393,10 +395,8 @@ const UIRender = {
                </div>
              </div>`;
     
-    html += `</div>`; // Fim da grande caixa contínua que engloba o laudo todo
-
-    // Injeta a imagem do rodapé para o CSS gerenciar a repetição no fundo da folha
     html += UIRender.prFooterHTML();
+    html += `</div>`; 
 
     container.innerHTML = html;
   },
@@ -413,11 +413,11 @@ const UIRender = {
     const valor = v('valorServico');
     const forma = v('formaPagamento');
     const nf = v('nfNumero');
-    
-    // Link RAW da logo
+
+    // 🔴 IMAGEM DA LOGO TAMBÉM NO RECIBO (RAW)
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    let html = '<div style="width: 100%;">';
+    let html = '<div class="pr-page">';
     html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
                <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
              </div>`;
@@ -438,9 +438,8 @@ const UIRender = {
     </div>`;
 
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
-    html += `</div>`;
-
     html += UIRender.prFooterHTML();
+    html += '</div>';
 
     const container = document.getElementById('print-report');
     if (container) container.innerHTML = html;
