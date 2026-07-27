@@ -50,7 +50,7 @@
   }
 
   /* ==========================================
-     1. MARCA D'ÁGUA (REPETE EM TODAS AS PÁGINAS)
+     1. MARCA D'ÁGUA E LOGO TOPO
      ========================================== */
   body::before {
     content: "";
@@ -66,6 +66,13 @@
     opacity: 0.04; 
     z-index: -1; 
     pointer-events: none;
+  }
+
+  .pr-top-logo {
+    display: block;
+    margin: 0 auto 15px auto;
+    max-width: 220px;
+    height: auto;
   }
 
   /* ==========================================
@@ -128,6 +135,7 @@
     border-bottom: 2px solid #111; 
     padding-bottom: 8px; 
     margin-bottom: 14px; 
+    text-align: center; /* Centraliza a logo e o título */
   }
 
   .pr-title { 
