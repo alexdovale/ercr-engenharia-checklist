@@ -78,7 +78,7 @@
      ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: -35mm; /* 🔥 O PULO DO GATO: Empurra a imagem para dentro do espaço em branco no fim da folha */
+    bottom: 35mm; /* 🔥 O PULO DO GATO: Empurra a imagem para dentro do espaço em branco no fim da folha */
     left: 0;
     width: 100%;
     height: 65mm; 
