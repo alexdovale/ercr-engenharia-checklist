@@ -50,7 +50,7 @@
   }
 
   /* ==========================================
-     1. MARCA D'ÁGUA E LOGO TOPO
+     1. MARCA D'ÁGUA (nova logo) E LOGO TOPO
      ========================================== */
   body::before {
     content: "";
@@ -59,7 +59,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png');
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png');
     background-size: 60%;
     background-repeat: no-repeat;
     background-position: center;
@@ -76,14 +76,17 @@
   }
 
   /* ==========================================
-     2. RODAPÉ FIXO (CORRIGIDO PARA NÃO SOBREPOR E NÃO SUMIR)
+     2. RODAPÉ FIXO — 0mm embaixo, 3mm laterais, 0mm em cima
      ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: -1px; /* Cola exatamente no fundo, evitando linha branca */
-    left: 0;
-    width: 100%;
-    height: 65mm; /* Ocupa exatamente a margem invisível que criamos no @page */
+    bottom: 0;                       /* toca o fundo real da folha */
+    left: -11mm;                     /* estoura os 14mm de margem lateral, deixando só 3mm (14mm - 11mm = 3mm) */
+    width: calc(100% + 22mm);        /* compensa os 11mm tirados de cada lado (11+11=22mm) */
+    height: 65mm;                    /* ocupa exatamente a margem invisível criada no @page */
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
     display: block; 
     z-index: 9999;
     /* Essa regra força o Chrome a imprimir o rodapé em todas as folhas, resolvendo o bug de sumir */
@@ -94,8 +97,8 @@
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: contain;
-    object-position: bottom;
+    object-fit: cover;               /* elimina sobra/letterbox em cima e nas laterais */
+    object-position: bottom center;  /* mantém a logo ancorada embaixo */
   }
 
   /* ==========================================
