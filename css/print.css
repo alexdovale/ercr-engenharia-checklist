@@ -4,12 +4,11 @@
  */
 
 @media print {
-  /* ===== Configuração da Página A4 ===== */
-  @page {
-    size: A4;
-    /* Margem inferior de 65mm para respeitar o rodapé */
-    margin: 12mm 14mm 65mm 14mm; 
-  }
+    /* ===== Configuração da Página A4 ===== */
+    @page {
+      size: 210mm 297mm; /* Força as dimensões físicas exatas do A4 */
+      margin: 12mm 14mm 65mm 14mm; 
+    }
 
   * {
     -webkit-print-color-adjust: exact !important;
