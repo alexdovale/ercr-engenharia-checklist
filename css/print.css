@@ -73,31 +73,28 @@
   }
 
   /* ==========================================
-     2. RODAPÉ FIXO — sem corte, sem sobra
-     Imagem "rodapé.png" tem proporção 2137x518 (≈4,125:1)
-     A altura da caixa é calculada automaticamente com aspect-ratio,
-     então a imagem inteira sempre aparece, sem cortar nada.
-     ========================================== */
+   2. RODAPÉ FIXO — reduzido e centralizado, sem sobrepor texto
+   ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: 0;                       /* encosta no fundo real da folha */
-    left: -11mm;                     /* estoura os 14mm de margem, deixando 3mm reais de cada lado */
-    width: calc(100% + 22mm);
-    aspect-ratio: 2137 / 518;        /* 🔥 mantém a proporção exata da imagem, sem cortar */
-    max-height: 65mm;                /* nunca ultrapassa a área reservada no @page */
+    bottom: 8mm;                     /* folga de segurança em relação ao fim físico da folha */
+    left: 50%;
+    transform: translateX(-50%) translateZ(0);
+    width: 100mm;                    /* tamanho bem menor (era 204mm) */
+    aspect-ratio: 2137 / 518;        /* mantém a proporção real da imagem, sem cortar */
+    max-height: 45mm;                /* nunca ultrapassa uma fração segura dos 65mm reservados */
     padding: 0;
     margin: 0;
     box-sizing: border-box;
-    display: block; 
+    display: block;
     z-index: 9999;
-    transform: translateZ(0); 
   }
-
+  
   .pr-footer img {
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: contain;             /* como a proporção já bate, não corta nem sobra */
+    object-fit: contain;
     object-position: bottom center;
   }
 
