@@ -7,7 +7,9 @@
   /* ===== Configuração da Página A4 ===== */
   @page {
     size: A4;
-    margin: 12mm 14mm 35mm 14mm; 
+    /* 🔥 A MÁGICA ESTÁ AQUI: Aumentamos a margem inferior para 65mm. 
+       Isso empurra o texto para a próxima folha antes dele encostar no rodapé preto. */
+    margin: 12mm 14mm 65mm 14mm; 
   }
 
   * {
@@ -17,8 +19,6 @@
 
   /* ==========================================
      🔥 BLOCO ANTI-CORTE DE PÁGINAS 🔥
-     Força o navegador a desenhar o PDF até o fim, 
-     ignorando limites de altura e flexbox do app.
      ========================================== */
   html, body, #print-report {
     display: block !important;
@@ -28,7 +28,7 @@
     max-height: none !important;
     overflow: visible !important;
     position: static !important;
-    background: #fff !important;
+    background: transparent !important;
     color: #1a1a1a !important;
     font-family: 'IBM Plex Sans', Arial, sans-serif;
     font-size: 10pt;
@@ -76,26 +76,26 @@
   }
 
   /* ==========================================
-     2. RODAPÉ (IMAGEM FIXA EM TODAS AS PÁGINAS)
+     2. RODAPÉ FIXO (CORRIGIDO PARA NÃO SOBREPOR E NÃO SUMIR)
      ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: 0;
+    bottom: -1px; /* Cola exatamente no fundo, evitando linha branca */
     left: 0;
     width: 100%;
+    height: 65mm; /* Ocupa exatamente a margem invisível que criamos no @page */
     display: block; 
-    z-index: 10;
+    z-index: 9999;
+    /* Essa regra força o Chrome a imprimir o rodapé em todas as folhas, resolvendo o bug de sumir */
+    transform: translateZ(0); 
   }
 
   .pr-footer img {
     width: 100%;
+    height: 100%;
     display: block;
     object-fit: contain;
-  }
-
-  /* Esconde o rodapé extra nas quebras para não borrar */
-  .pr-page:not(:last-child) .pr-footer {
-    display: none;
+    object-position: bottom;
   }
 
   /* ==========================================
@@ -135,7 +135,7 @@
     border-bottom: 2px solid #111; 
     padding-bottom: 8px; 
     margin-bottom: 14px; 
-    text-align: center; /* Centraliza a logo e o título */
+    text-align: center;
   }
 
   .pr-title { 
