@@ -8,12 +8,26 @@ const StorageService = {
   // Referência apenas para o Firestore (O Storage do Firebase não será mais usado para fotos)
   get db() { return firebase.firestore(); },
 
+  // Atalho para pegar o ID do usuário logado atual
+  get currentUid() {
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error("Acesso negado: Usuário não autenticado.");
+    return user.uid;
+  },
+
   /**
-   * Obtém a lista de todas as inspeções para o painel inicial
+   * Obtém a lista das inspeções APENAS do usuário logado atual
    */
   async getInspectionsList() {
     try {
-      const snap = await this.db.collection('inspections').orderBy('updatedAt', 'desc').get();
+      const uid = this.currentUid;
+      
+      // Busca no banco de dados filtrando apenas os laudos que têm a etiqueta (userId) deste usuário
+      const snap = await this.db.collection('inspections')
+        .where('userId', '==', uid)
+        .orderBy('updatedAt', 'desc')
+        .get();
+        
       if (snap.empty) return [];
       
       return snap.docs.map(doc => ({
@@ -44,11 +58,13 @@ const StorageService = {
 
   /**
    * Salva ou atualiza uma inspeção no banco de dados (Firestore)
-   * Se o ID for nulo, cria um novo documento.
+   * Agora carimbando o ID do usuário (Tenant Isolation)
    */
   async saveInspection(id, data) {
     try {
+      const uid = this.currentUid;
       let docRef;
+      
       if (id) {
         docRef = this.db.collection('inspections').doc(id);
       } else {
@@ -57,6 +73,7 @@ const StorageService = {
       
       const payload = {
         ...data,
+        userId: uid, // 🔥 AQUI ESTÁ A MÁGICA: A etiqueta de dono da inspeção
         updatedAt: new Date().toISOString()
       };
 
