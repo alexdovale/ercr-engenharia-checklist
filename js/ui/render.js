@@ -170,7 +170,6 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
-    // REMOVIDO: `<div class="pr-page">`. AGORA É TUDO UM BLOCO SÓ.
     let html = '<div style="width: 100%;">';
 
     html += `
@@ -312,6 +311,41 @@ const UIRender = {
              <div class="pr-field-line" style="margin-top:10px; margin-bottom: 30px;">
                <strong>Considerações Técnicas:</strong> ${esc(v('consideracoes'))}
              </div>`;
+
+    // === CAPTURA DE ASSINATURAS EM TEMPO REAL DO CANVAS ===
+    
+    // Verifica e captura a assinatura do Inspetor
+    const canvasInspetor = document.getElementById('sig-respIns');
+    let imgInspetorBase64 = null;
+    if (canvasInspetor) {
+      const blank = document.createElement('canvas');
+      blank.width = canvasInspetor.width;
+      blank.height = canvasInspetor.height;
+      if (canvasInspetor.toDataURL() !== blank.toDataURL()) {
+        imgInspetorBase64 = canvasInspetor.toDataURL('image/png');
+        if (!signatureData) signatureData = {};
+        if (!signatureData.respIns) signatureData.respIns = {};
+        signatureData.respIns.methodUsed = 'canvas';
+        signatureData.respIns.image = imgInspetorBase64;
+      }
+    }
+
+    // Verifica e captura a assinatura do Cliente
+    const canvasCliente = document.getElementById('sig-repCli');
+    let imgClienteBase64 = null;
+    if (canvasCliente) {
+      const blank = document.createElement('canvas');
+      blank.width = canvasCliente.width;
+      blank.height = canvasCliente.height;
+      if (canvasCliente.toDataURL() !== blank.toDataURL()) {
+        imgClienteBase64 = canvasCliente.toDataURL('image/png');
+        if (!signatureData) signatureData = {};
+        if (!signatureData.repCli) signatureData.repCli = {};
+        signatureData.repCli.methodUsed = 'canvas';
+        signatureData.repCli.image = imgClienteBase64;
+      }
+    }
+    // ========================================================
 
     // ASSINATURAS
     html += `<div class="pr-section-title">ASSINATURAS</div>
