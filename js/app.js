@@ -1,52 +1,157 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Final Consolidada
+ * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+// ==========================================
+// VARIÁVEIS GLOBAIS DE CONTROLE
+// ==========================================
+let usuarioAtual = null;
+let firebaseCarregado = false;
+let currentRecordId = null;
+let photoUrls = {}; 
+let currentSeq = null;
+let emissionLog = [];
+
+// ==========================================
+// 1. OBSERVADOR DE AUTENTICAÇÃO DO FIREBASE
+// ==========================================
+firebase.auth().onAuthStateChanged((user) => {
+  usuarioAtual = user;
+  firebaseCarregado = true;
   
-  // 1. Inicializa a Autenticação
-  AuthService.init();
+  // O AuthStateChanged funciona como um "gatilho" para iniciar o Router
+  handleRoute(); 
+});
 
-  // Variáveis de Estado
-  let currentRecordId = null;
-  // 🔥 AGORA CADA ITEM GUARDA UM ARRAY DE URLs (antes era 1 string por item)
-  let photoUrls = {}; 
-  let currentSeq = null;
-  let emissionLog = [];
+// ==========================================
+// 2. MOTOR DO ROUTER (O GUARDAS DE ROTAS)
+// ==========================================
+function handleRoute() {
+  // Impede de rotear antes do Firebase verificar o login
+  if (!firebaseCarregado) return; 
 
-  // Elementos da Interface
+  // Pega a URL atual (ex: "#form?id=123"). Se não tiver, vai pro login
+  let fullHash = window.location.hash || '#login';
+  
+  // Pega só o nome da rota principal (ignora o que vem depois do "?")
+  let rota = fullHash.split('?')[0]; 
+
+  // --- 🛡️ GUARDA DE ROTA ---
+  // Se NÃO está logado e tentou acessar tela restrita -> Força ir pro login
+  if (!usuarioAtual && rota !== '#login') {
+    window.location.hash = '#login';
+    return; // Para a função aqui
+  }
+
+  // Se JÁ ESTÁ logado e tentou acessar a tela de login -> Força ir pra lista
+  if (usuarioAtual && rota === '#login') {
+    window.location.hash = '#lista';
+    return;
+  }
+
+  // --- 📺 GERENCIAMENTO DAS TELAS ---
+  const screenLock = document.getElementById('screen-lock');
   const screenList = document.getElementById('screen-list');
   const screenForm = document.getElementById('screen-form');
-  const listContainer = document.getElementById('inspection-list');
-  const sectionsContainer = document.getElementById('sections-container');
 
-  // 2. Escuta o evento de Login bem-sucedido
-  window.addEventListener('auth-success', async (e) => {
-    await loadList();
-  });
+  // Oculta todas as telas primeiro
+  if(screenLock) screenLock.style.display = 'none';
+  if(screenList) screenList.style.display = 'none';
+  if(screenForm) screenForm.style.display = 'none';
+
+  // Mostra apenas a tela correta baseada no Hash
+  switch (rota) {
+    case '#lista':
+      if(screenList) screenList.style.display = 'block';
+      loadList(); // Carrega os dados do Firebase para a lista
+      break;
+
+    case '#form':
+      if(screenForm) screenForm.style.display = 'block';
+      
+      // Lê os parâmetros da URL para saber se deve carregar um ID salvo
+      let parametros = new URLSearchParams(window.location.hash.split('?')[1]);
+      let idInspecao = parametros.get('id');
+      
+      if (idInspecao) {
+        // Se a rota veio com ID e o currentRecordId é diferente, carrega do banco
+        if (currentRecordId !== idInspecao) {
+          loadRecord(idInspecao);
+        }
+      } else {
+        // Se a rota não tem ID, é uma Nova Inspeção
+        currentRecordId = null;
+        clearFormUI();
+        const lbl = document.getElementById('rec-id-label');
+        if (lbl) lbl.textContent = 'NOVA INSPEÇÃO · AINDA NÃO SALVA';
+        const btnDelete = document.getElementById('btn-delete');
+        if (btnDelete) btnDelete.style.display = 'none';
+      }
+      break;
+
+    case '#login':
+    default:
+      if(screenLock) screenLock.style.display = 'flex';
+      break;
+  }
+}
+
+// 3. ESCUTA MUDANÇAS NA URL (Quando o usuário clica no "Voltar" do navegador/celular)
+window.addEventListener('hashchange', handleRoute);
+
+
+// ==========================================
+// CÓDIGO DA APLICAÇÃO (UI, FIREBASE, FOTOS)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  
+  // Inicializa a Autenticação manual (caso precise, embora o onAuthStateChanged já cuide da sessão)
+  if(typeof AuthService !== 'undefined') AuthService.init();
+
+  const listContainer = document.getElementById('inspection-list');
+  const screenForm = document.getElementById('screen-form');
 
   // 3. Renderiza o Checklist Dinâmico
-  UIRender.renderChecklist('sections-container', SECTIONS);
+  if(typeof SECTIONS !== 'undefined' && typeof UIRender !== 'undefined') {
+    UIRender.renderChecklist('sections-container', SECTIONS);
+  }
 
-  // 4. Navegação
-  document.getElementById('btn-new-inspection').addEventListener('click', () => {
-    currentRecordId = null;
-    clearFormUI();
-    document.getElementById('rec-id-label').textContent = 'NOVA INSPEÇÃO · AINDA NÃO SALVA';
-    document.getElementById('btn-delete').style.display = 'none';
-    screenList.style.display = 'none';
-    screenForm.style.display = '';
-  });
+  // ==========================================
+  // 4. BOTÕES DE NAVEGAÇÃO
+  // ==========================================
+  
+  // Botão Nova Inspeção (Muda o hash sem parâmetros)
+  const btnNew = document.getElementById('btn-new-inspection');
+  if(btnNew) {
+    btnNew.addEventListener('click', () => {
+      window.location.hash = '#form';
+    });
+  }
 
-  document.getElementById('btn-back-list').addEventListener('click', () => {
-    screenForm.style.display = 'none';
-    screenList.style.display = '';
-    loadList();
-  });
+  // Botão Voltar (Retorna para a lista)
+  const btnBack = document.getElementById('btn-back-list');
+  if(btnBack) {
+    btnBack.addEventListener('click', () => {
+      window.location.hash = '#lista';
+    });
+  }
 
-  // 5. Função Carregar Lista (Status + Exclusão)
+  // Botão Sair (Logout)
+  const btnLogout = document.getElementById('btn-logout');
+  if(btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      firebase.auth().signOut().then(() => {
+        window.location.hash = '#login';
+      }).catch(err => alert("Erro ao deslogar: " + err.message));
+    });
+  }
+
+  // ==========================================
+  // 5. FUNÇÃO CARREGAR LISTA
+  // ==========================================
   async function loadList() {
+    if(!listContainer) return;
     listContainer.innerHTML = '<div class="list-loading">Carregando inspeções…</div>';
     try {
       const records = await StorageService.getInspectionsList();
@@ -73,9 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       listContainer.innerHTML = `${renderGroup('rascunho', 'Rascunhos')}${renderGroup('pendente_revisao', 'Pendentes de Revisão')}${renderGroup('revisado', 'Aprovados')}`;
 
+      // Quando clica no Card, atualiza a Rota passando o ID
       listContainer.querySelectorAll('.card').forEach(card => {
         card.addEventListener('click', (e) => {
-          if (!e.target.classList.contains('btn-delete-card')) loadRecord(card.dataset.id);
+          if (!e.target.classList.contains('btn-delete-card')) {
+            window.location.hash = `#form?id=${card.dataset.id}`;
+          }
         });
       });
 
@@ -95,85 +203,126 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 6. Lógica de Checklist e Fotos (Global para todo o formulário)
-  screenForm.addEventListener('click', (e) => {
-    if (e.target.classList.contains('photo-btn')) {
-      e.target.nextElementSibling.click();
-    }
-  });
+  // ==========================================
+  // 6. LÓGICA DO FORMULÁRIO (Checklist e Fotos)
+  // ==========================================
+  if(screenForm) {
+    screenForm.addEventListener('click', (e) => {
+      if (e.target.classList.contains('photo-btn')) {
+        e.target.nextElementSibling.click();
+      }
+    });
 
-  screenForm.addEventListener('change', async (e) => {
-    // 6.1 Tratativa dos Botões de Seleção (Seções 2 a 15)
-    if (e.target.type === 'radio') {
-      const name = e.target.name;
-      const group = document.querySelectorAll(`input[name="${name}"]`);
-      
-      group.forEach(input => {
-        const label = input.closest('label');
-        if (label) {
-          label.classList.remove('sel', 'sel-apto', 'sel-restr', 'sel-inapto');
+    screenForm.addEventListener('change', async (e) => {
+      // 6.1 Tratativa dos Botões de Seleção
+      if (e.target.type === 'radio') {
+        const name = e.target.name;
+        const group = document.querySelectorAll(`input[name="${name}"]`);
+        
+        group.forEach(input => {
+          const label = input.closest('label');
+          if (label) {
+            label.classList.remove('sel', 'sel-apto', 'sel-restr', 'sel-inapto');
+          }
+        });
+
+        const selectedLabel = e.target.closest('label');
+        if (selectedLabel) {
+          if (selectedLabel.classList.contains('opt') || selectedLabel.classList.contains('crit')) {
+            selectedLabel.classList.add('sel');
+          } else if (selectedLabel.classList.contains('class-opt')) {
+            const val = e.target.value;
+            if (val === 'apto') selectedLabel.classList.add('sel-apto');
+            if (val === 'restricoes') selectedLabel.classList.add('sel-restr');
+            if (val === 'inapto') selectedLabel.classList.add('sel-inapto');
+          }
         }
-      });
 
-      const selectedLabel = e.target.closest('label');
-      if (selectedLabel) {
-        if (selectedLabel.classList.contains('opt') || selectedLabel.classList.contains('crit')) {
-          selectedLabel.classList.add('sel');
-        } else if (selectedLabel.classList.contains('class-opt')) {
-          const val = e.target.value;
-          if (val === 'apto') selectedLabel.classList.add('sel-apto');
-          if (val === 'restricoes') selectedLabel.classList.add('sel-restr');
-          if (val === 'inapto') selectedLabel.classList.add('sel-inapto');
+        if (selectedLabel && selectedLabel.classList.contains('opt')) {
+          updateGauges();
         }
       }
 
-      if (selectedLabel && selectedLabel.classList.contains('opt')) {
-        updateGauges();
-      }
-    }
+      // 6.2 Upload de Imagens
+      if (e.target.type === 'file' && e.target.files && e.target.files.length > 0) {
+        if (!currentRecordId) {
+          alert("Salve a inspeção em 'Rascunho' antes de anexar fotos para criar o banco de imagens.");
+          e.target.value = '';
+          return;
+        }
 
-    // 6.2 Tratativa de Upload de Imagens
-    if (e.target.type === 'file' && e.target.files && e.target.files.length > 0) {
-      if (!currentRecordId) {
-        alert("Salve a inspeção em 'Rascunho' antes de anexar fotos para criar o banco de imagens.");
+        const itemCell = e.target.closest('.photo-cell');
+        const itemId = itemCell.dataset.photoItem;
+        const thumbWrap = itemCell.querySelector('.photo-thumb-wrap');
+        const files = Array.from(e.target.files);
+
+        if (!Array.isArray(photoUrls[itemId])) {
+          photoUrls[itemId] = photoUrls[itemId] ? [photoUrls[itemId]] : [];
+        }
+
+        const loadingTags = files.map(() => {
+          const tag = document.createElement('div');
+          tag.className = 'photo-thumb';
+          tag.textContent = '…';
+          thumbWrap.appendChild(tag);
+          return tag;
+        });
+
+        for (let i = 0; i < files.length; i++) {
+          try {
+            const url = await StorageService.uploadPhoto(currentRecordId, itemId, files[i]);
+            photoUrls[itemId].push(url);
+          } catch (err) {
+            console.error("Erro no upload:", err);
+            alert("Falha ao subir foto: " + err.message);
+          } finally {
+            loadingTags[i].remove();
+          }
+        }
+
+        renderPhotoThumbs(itemId, thumbWrap);
         e.target.value = '';
-        return;
       }
 
-      const itemCell = e.target.closest('.photo-cell');
-      const itemId = itemCell.dataset.photoItem;
-      const thumbWrap = itemCell.querySelector('.photo-thumb-wrap');
-      const files = Array.from(e.target.files);
-
-      if (!Array.isArray(photoUrls[itemId])) {
-        photoUrls[itemId] = photoUrls[itemId] ? [photoUrls[itemId]] : [];
-      }
-
-      const loadingTags = files.map(() => {
-        const tag = document.createElement('div');
-        tag.className = 'photo-thumb';
-        tag.textContent = '…';
-        thumbWrap.appendChild(tag);
-        return tag;
-      });
-
-      for (let i = 0; i < files.length; i++) {
-        try {
-          const url = await StorageService.uploadPhoto(currentRecordId, itemId, files[i]);
-          photoUrls[itemId].push(url);
-        } catch (err) {
-          console.error("Erro no upload:", err);
-          alert("Falha ao subir foto: " + err.message);
-        } finally {
-          loadingTags[i].remove();
+      // 6.3 Disparo de Assinatura Remota (WhatsApp)
+      if (e.target.type === 'radio' && e.target.value === 'remote') {
+        if (!currentRecordId) {
+          alert("Por favor, clique em 'Salvar' (como Rascunho) antes de solicitar a assinatura remota. Precisamos gerar um ID para o link do cliente!");
+          const canvasRadio = document.querySelector('input[type="radio"][value="canvas"]');
+          if (canvasRadio) canvasRadio.checked = true;
+          return;
         }
+
+        const telefoneInput = document.getElementById('telefone');
+        const nomeInput = document.getElementById('repCliNome') || document.getElementById('respVeic');
+        const placaInput = document.getElementById('placa');
+
+        const telefone = telefoneInput ? telefoneInput.value.replace(/\D/g, '') : '';
+        const nome = nomeInput && nomeInput.value ? nomeInput.value.trim() : 'Cliente';
+        const placa = placaInput && placaInput.value ? placaInput.value.trim() : 'Veículo';
+
+        if (!telefone || telefone.length < 10) {
+          alert('Por favor, preencha um número de telefone válido no campo "Telefone" antes de solicitar a assinatura.');
+          const canvasRadio = document.querySelector('input[type="radio"][value="canvas"]');
+          if (canvasRadio) canvasRadio.checked = true;
+          return;
+        }
+
+        const urlBase = window.location.origin;
+        const linkAssinatura = `${urlBase}/assinar.html?id=${currentRecordId}`; 
+        
+        const mensagem = `Olá, ${nome}.\n\nSegue o link para assinatura digital do laudo de inspeção do veículo placa *${placa}*.\n\nPor favor, acesse o link abaixo para conferir e assinar:\n${linkAssinatura}\n\nAtenciosamente,\nERCR Engenharia Mecânica.`;
+        const mensagemCodificada = encodeURIComponent(mensagem);
+        const urlWhatsapp = `https://wa.me/55${telefone}?text=${mensagemCodificada}`;
+        
+        window.open(urlWhatsapp, '_blank');
       }
+    });
+  }
 
-      renderPhotoThumbs(itemId, thumbWrap);
-      e.target.value = '';
-    }
-  });
-
+  // ==========================================
+  // FUNÇÕES AUXILIARES DE RENDER E FOTOS
+  // ==========================================
   function renderPhotoThumbs(itemId, thumbWrap) {
     const urls = photoUrls[itemId] || [];
     thumbWrap.innerHTML = urls.map((url, idx) => `
@@ -201,25 +350,35 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (v === 'nao_conforme' || v === 'nao_realizado') nc++;
       else na++;
     });
-    document.getElementById('cnt-c').textContent = c;
-    document.getElementById('cnt-nc').textContent = nc;
-    document.getElementById('cnt-na').textContent = na;
-    document.getElementById('cnt-pend').textContent = (document.querySelectorAll('.opts').length - c - nc - na);
+    
+    const elemC = document.getElementById('cnt-c');
+    const elemNc = document.getElementById('cnt-nc');
+    const elemNa = document.getElementById('cnt-na');
+    const elemPend = document.getElementById('cnt-pend');
+
+    if(elemC) elemC.textContent = c;
+    if(elemNc) elemNc.textContent = nc;
+    if(elemNa) elemNa.textContent = na;
+    if(elemPend) elemPend.textContent = (document.querySelectorAll('.opts').length - c - nc - na);
   }
 
-  // 7. Salvamento e PDF
+  // ==========================================
+  // 7. SALVAMENTO E PDF
+  // ==========================================
   async function collectState() {
     const state = { 
       text: {}, 
       radios: {}, 
-      status: document.getElementById('status-select').value, 
+      status: document.getElementById('status-select')?.value || 'rascunho', 
       photoUrls: { ...photoUrls }, 
       seq: currentSeq, 
       emissionLog: emissionLog 
     };
+    
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => { 
       if (el.id) state.text[el.id] = el.value; 
     });
+    
     document.querySelectorAll('input[type=radio]:checked').forEach(r => { 
       state.radios[r.name] = r.value; 
     });
@@ -234,31 +393,47 @@ document.addEventListener('DOMContentLoaded', () => {
     return state;
   }
 
-  document.getElementById('btn-save').addEventListener('click', async () => {
-    try {
-      const state = await collectState();
-      currentRecordId = await StorageService.saveInspection(currentRecordId, state);
-      alert('Salvo com sucesso!');
-    } catch (err) {
-      console.error("🚨 ERRO AO SALVAR:", err);
-      alert("Erro: " + err.message);
-    }
-  });
+  const btnSave = document.getElementById('btn-save');
+  if(btnSave) {
+    btnSave.addEventListener('click', async () => {
+      try {
+        const state = await collectState();
+        currentRecordId = await StorageService.saveInspection(currentRecordId, state);
+        
+        // Atualiza a URL para refletir que a inspeção agora tem um ID (sem recarregar a tela)
+        window.history.replaceState(null, null, `#form?id=${currentRecordId}`);
+        
+        alert('Salvo com sucesso!');
+      } catch (err) {
+        console.error("🚨 ERRO AO SALVAR:", err);
+        alert("Erro: " + err.message);
+      }
+    });
+  }
 
-  document.getElementById('btn-pdf').addEventListener('click', async () => {
-    try {
-      if (!currentSeq) currentSeq = { number: await StorageService.getNextSeqNumber(new Date().getFullYear()), year: new Date().getFullYear() };
-      const state = await collectState();
-      currentRecordId = await StorageService.saveInspection(currentRecordId, state);
-      UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
-      window.print();
-    } catch (err) {
-      console.error("🚨 ERRO NO PDF:", err);
-      alert("Erro: " + err.message);
-    }
-  });
+  const btnPdf = document.getElementById('btn-pdf');
+  if(btnPdf) {
+    btnPdf.addEventListener('click', async () => {
+      try {
+        if (!currentSeq && typeof StorageService !== 'undefined') {
+          currentSeq = { number: await StorageService.getNextSeqNumber(new Date().getFullYear()), year: new Date().getFullYear() };
+        }
+        const state = await collectState();
+        currentRecordId = await StorageService.saveInspection(currentRecordId, state);
+        window.history.replaceState(null, null, `#form?id=${currentRecordId}`);
+        
+        if(typeof UIRender !== 'undefined') {
+          UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
+        }
+        window.print();
+      } catch (err) {
+        console.error("🚨 ERRO NO PDF:", err);
+        alert("Erro: " + err.message);
+      }
+    });
+  }
   
-  // 1. LIMPAR ASSINATURAS (Desenho e Texto)
+  // Limpar Assinaturas
   document.querySelectorAll('.sig-clear').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const targetId = e.target.dataset.target; 
@@ -275,33 +450,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 2. GERAR RECIBO
+  // Gerar Recibo
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
     btnReceipt.addEventListener('click', () => {
       const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
-      const cnpj = document.getElementById('cnpj').value || '00.000.000/0000-00';
+      const cnpj = document.getElementById('cnpj')?.value || '00.000.000/0000-00';
       
-      UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
+      if(typeof UIRender !== 'undefined') UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
       window.print();
     });
   }
 
-  // 3. CONSTRUTOR DO MENU DE NAVEGAÇÃO (0 ATÉ 15 EM ORDEM)
+  // ==========================================
+  // CONSTRUTOR DO MENU DE NAVEGAÇÃO E BOTÃO ÍMÃ
+  // ==========================================
   const navMenu = document.getElementById('quick-nav');
   if (navMenu && typeof SECTIONS !== 'undefined') {
     navMenu.innerHTML = '<option value="">Ir para a seção...</option>';
-    
-    // Injeta Seção 0 e Seção 1 de Cabeçalho Fixos
     navMenu.innerHTML += `<option value="secao-0">0. Identificação da Inspeção</option>`;
     navMenu.innerHTML += `<option value="secao-1">1. Identificação do Veículo</option>`;
-    
-    // Injeta as Seções Dinâmicas (2 até 13)
-    SECTIONS.forEach(sec => {
-      navMenu.innerHTML += `<option value="secao-${sec.n}">${sec.n}. ${sec.title}</option>`;
-    });
-    
-    // Injeta as Seções Finais Estáticas (14 e 15)
+    SECTIONS.forEach(sec => { navMenu.innerHTML += `<option value="secao-${sec.n}">${sec.n}. ${sec.title}</option>`; });
     navMenu.innerHTML += `<option value="secao-14">14. Registro de Não Conformidades</option>`;
     navMenu.innerHTML += `<option value="secao-15">15. Conclusão da Inspeção</option>`;
 
@@ -316,7 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. BOTÃO ÍMÃ: ENCONTRAR PENDENTES
   const gaugePendente = document.querySelector('.gauge.pend');
   if (gaugePendente) {
     gaugePendente.style.cursor = 'pointer';
@@ -346,14 +514,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function clearFormUI() {
+  // ==========================================
+  // FUNÇÕES DE LIMPEZA E CARREGAMENTO GERAL
+  // ==========================================
+  // Colocada no escopo global para o Router conseguir chamar
+  window.clearFormUI = function() {
     document.querySelectorAll('input[type=text], input[type=date], input[type=time], textarea').forEach(el => el.value = '');
     document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
     
     document.querySelectorAll('.opt, .crit').forEach(el => el.classList.remove('sel'));
     document.querySelectorAll('.class-opt').forEach(el => el.classList.remove('sel-apto', 'sel-restr', 'sel-inapto'));
     
-    // Reseta caixas de seleção da FIPE
     const selM = document.getElementById('fipe-marca');
     const selMod = document.getElementById('fipe-modelo');
     const selA = document.getElementById('fipe-ano');
@@ -361,11 +532,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(selMod) { selMod.innerHTML = '<option value="">Aguardando Marca...</option>'; selMod.disabled = true; }
     if(selA) { selA.innerHTML = '<option value="">Aguardando Modelo...</option>'; selA.disabled = true; }
 
-    // Reseta as bordas indicadoras da busca por placa
-    document.getElementById('chassi').style.border = "";
-    document.getElementById('numMotor').style.border = "";
+    const chassi = document.getElementById('chassi');
+    const motor = document.getElementById('numMotor');
+    if(chassi) chassi.style.border = "";
+    if(motor) motor.style.border = "";
 
-    // Limpa visualmente todas as miniaturas de foto já renderizadas
     document.querySelectorAll('.photo-thumb-wrap').forEach(w => w.innerHTML = '');
 
     photoUrls = {}; 
@@ -378,11 +549,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function loadRecord(id) {
+  // Colocada no escopo global para o Router conseguir chamar
+  window.loadRecord = async function(id) {
     const state = await StorageService.getInspection(id);
     if (!state) return;
     currentRecordId = id;
     clearFormUI();
+    
     Object.entries(state.text || {}).forEach(([key, val]) => { 
       const el = document.getElementById(key); 
       if (el) el.value = val; 
@@ -406,16 +579,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    document.getElementById('status-select').value = state.status || 'rascunho';
+    const statusSel = document.getElementById('status-select');
+    if(statusSel) statusSel.value = state.status || 'rascunho';
 
-    // Normaliza fotos antigas (salvas como 1 string por item) para o formato de array
     const rawPhotos = state.photoUrls || {};
     photoUrls = {};
     Object.entries(rawPhotos).forEach(([itemId, val]) => {
       photoUrls[itemId] = Array.isArray(val) ? val : [val];
     });
 
-    // Redesenha as miniaturas de cada item que já tem foto salva
     Object.keys(photoUrls).forEach(itemId => {
       const cell = document.querySelector(`.photo-cell[data-photo-item="${itemId}"]`);
       const thumbWrap = cell ? cell.querySelector('.photo-thumb-wrap') : null;
@@ -423,59 +595,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     currentSeq = state.seq || null;
-    document.getElementById('rec-id-label').textContent = `ID ${id}`;
-    screenList.style.display = 'none'; 
-    screenForm.style.display = '';
+    const lbl = document.getElementById('rec-id-label');
+    if(lbl) lbl.textContent = `ID ${id}`;
+    
+    const btnDelete = document.getElementById('btn-delete');
+    if (btnDelete) btnDelete.style.display = '';
+
     updateGauges();
   }
-
-  // ==========================================
-  // DISPARO DE ASSINATURA VIA WHATSAPP (FIREBASE)
-  // ==========================================
-  screenForm.addEventListener('change', (e) => {
-    // Ajuste 'remote' para o valor exato (value) do botão no seu index.html
-    if (e.target.type === 'radio' && e.target.value === 'remote') {
-      
-      // 1. Verifica se a inspeção já foi salva no Firebase e tem um ID
-      if (!currentRecordId) {
-        alert("Por favor, clique em 'Salvar' (como Rascunho) antes de solicitar a assinatura remota. Precisamos gerar um ID para o link do cliente!");
-        
-        // Volta para 'canvas' para não bugar a interface
-        const canvasRadio = document.querySelector('input[type="radio"][value="canvas"]');
-        if (canvasRadio) canvasRadio.checked = true;
-        return;
-      }
-
-      // 2. Captura os dados da tela
-      const telefoneInput = document.getElementById('telefone');
-      const nomeInput = document.getElementById('repCliNome') || document.getElementById('respVeic');
-      const placaInput = document.getElementById('placa');
-
-      const telefone = telefoneInput ? telefoneInput.value.replace(/\D/g, '') : '';
-      const nome = nomeInput && nomeInput.value ? nomeInput.value.trim() : 'Cliente';
-      const placa = placaInput && placaInput.value ? placaInput.value.trim() : 'Veículo';
-
-      // 3. Trava do telefone
-      if (!telefone || telefone.length < 10) {
-        alert('Por favor, preencha um número de telefone válido no campo "Telefone" antes de solicitar a assinatura.');
-        const canvasRadio = document.querySelector('input[type="radio"][value="canvas"]');
-        if (canvasRadio) canvasRadio.checked = true;
-        return;
-      }
-
-      // 4. Monta o link inteligente do Firebase usando a URL raiz do seu site
-      // Isso criará algo como: https://sua-url-do-firebase.com/assinar.html?id=XYZ123
-      const urlBase = window.location.origin;
-      const linkAssinatura = `${urlBase}/assinar.html?id=${currentRecordId}`; 
-      
-      // 5. Monta e dispara a mensagem pro WhatsApp
-      const mensagem = `Olá, ${nome}.\n\nSegue o link para assinatura digital do laudo de inspeção do veículo placa *${placa}*.\n\nPor favor, acesse o link abaixo para conferir e assinar:\n${linkAssinatura}\n\nAtenciosamente,\nERCR Engenharia Mecânica.`;
-
-      const mensagemCodificada = encodeURIComponent(mensagem);
-      const urlWhatsapp = `https://wa.me/55${telefone}?text=${mensagemCodificada}`;
-      
-      window.open(urlWhatsapp, '_blank');
-    }
-  });
 
 });
