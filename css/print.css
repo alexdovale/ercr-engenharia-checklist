@@ -78,9 +78,9 @@
      ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: 0mm; /* 🔥 O PULO DO GATO: Empurra a imagem para dentro do espaço em branco no fim da folha */
-    left: 0;
-    width: 100%;
+    bottom: -65mm; /* 🔥 Desce a imagem até o limite físico do papel */
+    left: -14mm;   /* 🔥 Puxa a imagem para a beirada esquerda */
+    width: calc(100% + 28mm); /* 🔥 Preenche de ponta a ponta compensando as margens laterais */
     height: 65mm; 
     display: block; 
     z-index: 9999;
@@ -91,7 +91,7 @@
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: contain;
+    object-fit: cover; /* Garante que a imagem preencha a área sem distorcer */
     object-position: bottom;
   }
 
