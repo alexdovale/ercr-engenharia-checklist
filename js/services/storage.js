@@ -5,7 +5,7 @@
 
 const StorageService = {
   
-  // Referência apenas para o Firestore (O Storage do Firebase não será mais usado para fotos)
+  // Referência para o Firestore
   get db() { return firebase.firestore(); },
 
   // Atalho para pegar o ID do usuário logado atual
@@ -16,15 +16,12 @@ const StorageService = {
   },
 
   /**
-   * Obtém a lista das inspeções APENAS do usuário logado atual
+   * Obtém a lista de TODAS as inspeções (Visão Colaborativa para a Empresa)
    */
   async getInspectionsList() {
     try {
-      const uid = this.currentUid;
-      
-      // Busca no banco de dados filtrando apenas os laudos que têm a etiqueta (userId) deste usuário
+      // Busca todas as inspeções, ordenando pela data da última atualização
       const snap = await this.db.collection('inspections')
-        .where('userId', '==', uid)
         .orderBy('updatedAt', 'desc')
         .get();
         
@@ -58,13 +55,14 @@ const StorageService = {
 
   /**
    * Salva ou atualiza uma inspeção no banco de dados (Firestore)
-   * Agora carimbando o ID do usuário (Tenant Isolation)
+   * Carimba o E-mail e o ID do usuário que emitiu o laudo.
    */
   async saveInspection(id, data) {
     try {
-      const uid = this.currentUid;
+      const user = firebase.auth().currentUser;
+      if (!user) throw new Error("Acesso negado: Usuário não autenticado.");
+
       let docRef;
-      
       if (id) {
         docRef = this.db.collection('inspections').doc(id);
       } else {
@@ -73,7 +71,8 @@ const StorageService = {
       
       const payload = {
         ...data,
-        userId: uid, // 🔥 AQUI ESTÁ A MÁGICA: A etiqueta de dono da inspeção
+        userId: user.uid,           // Grava o ID de quem criou/editou para regras de segurança
+        creatorEmail: user.email,   // Grava o E-mail para aparecer na tela inicial
         updatedAt: new Date().toISOString()
       };
 
