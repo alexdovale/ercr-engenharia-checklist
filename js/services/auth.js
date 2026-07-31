@@ -1,6 +1,6 @@
 /**
  * js/services/auth.js
- * Gerenciador de Autenticação (Firebase Auth)
+ * Gerenciador de Autenticação (Firebase Auth) - Integrado com Router
  */
 
 const AuthService = {
@@ -8,11 +8,7 @@ const AuthService = {
   init: () => {
     // Garante que o Firebase já foi inicializado no config/firebase.js
     const auth = firebase.auth();
-    
-    const lockScreen = document.getElementById('screen-lock');
     const lockContent = document.getElementById('lock-content');
-    const screenList = document.getElementById('screen-list');
-    const screenForm = document.getElementById('screen-form');
 
     // Dicionário de erros traduzidos
     const AUTH_ERROR_MESSAGES = {
@@ -30,16 +26,6 @@ const AuthService = {
       return AUTH_ERROR_MESSAGES[err.code] || 'Não foi possível concluir. Tente novamente.';
     };
 
-    const hideLock = () => { 
-      lockScreen.style.display = 'none'; 
-    };
-    
-    const showLock = () => { 
-      lockScreen.style.display = 'flex'; 
-      if (screenList) screenList.style.display = 'none';
-      if (screenForm) screenForm.style.display = 'none';
-    };
-
     const showError = (msg) => { 
       const el = document.getElementById('auth-error');
       if (el) {
@@ -52,6 +38,7 @@ const AuthService = {
      * Renderiza o formulário de Login
      */
     const renderLogin = () => {
+      if (!lockContent) return;
       lockContent.innerHTML = `
         <p>Entre com seu e-mail e senha para acessar o checklist.</p>
         <input type="email" id="auth-email" placeholder="E-mail" autocomplete="username">
@@ -67,6 +54,7 @@ const AuthService = {
         if (!email || !pass) { showError('Preencha e-mail e senha.'); return; }
         
         try {
+          // Faz o login no Firebase. O Router (app.js) detecta o sucesso e muda a tela!
           await auth.signInWithEmailAndPassword(email, pass);
         } catch (err) { 
           showError(getAuthErrorMessage(err)); 
@@ -82,6 +70,7 @@ const AuthService = {
      * Renderiza o formulário de Cadastro
      */
     const renderSignup = () => {
+      if (!lockContent) return;
       lockContent.innerHTML = `
         <p>Crie sua conta de acesso ao checklist.</p>
         <input type="email" id="auth-email" placeholder="E-mail" autocomplete="username">
@@ -97,6 +86,7 @@ const AuthService = {
         if (!email || !pass) { showError('Preencha e-mail e senha.'); return; }
         
         try {
+          // Cria a conta e já loga. O Router detecta e muda a tela!
           await auth.createUserWithEmailAndPassword(email, pass);
         } catch (err) { 
           showError(getAuthErrorMessage(err)); 
@@ -108,26 +98,12 @@ const AuthService = {
       document.getElementById('link-to-login').addEventListener('click', e => { e.preventDefault(); renderLogin(); });
     };
 
-    /**
-     * Listeners Fixos e Observador de Estado
-     */
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-      btnLogout.addEventListener('click', () => auth.signOut());
-    }
-
-    // O Firebase dispara isso automaticamente quando a página carrega ou o usuário loga/desloga
+    // Fica de olho apenas para resetar os campos de senha caso o usuário saia do sistema
     auth.onAuthStateChanged(user => {
-      if (user) {
-        hideLock();
-        screenList.style.display = '';
-        
-        // Emite um evento global avisando o resto do sistema que o login foi feito
-        window.dispatchEvent(new CustomEvent('auth-success', { detail: { user } }));
-      } else {
-        showLock();
-        renderLogin();
+      if (!user) {
+        renderLogin(); // Monta a tela de login vazia e limpa
       }
     });
+
   }
 };
