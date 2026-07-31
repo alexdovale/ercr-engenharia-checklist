@@ -1,6 +1,6 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router
+ * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router e E-mail do Emissor
  */
 
 // ==========================================
@@ -169,6 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="info">
               <div class="placa">${rec.text?.placa || '(sem placa)'}</div>
               <div class="meta">${rec.text?.empresa || ''}</div>
+              <!-- 🔥 MOSTRA QUEM EMITIU AQUI: -->
+              <div class="meta" style="color: #555; font-size: 10.5px; margin-top: 6px; font-weight: 500;">
+                👤 Emitido por: ${rec.creatorEmail || 'Usuário anterior'}
+              </div>
             </div>
             <button class="btn-delete-card" data-id="${rec.id}" data-photos='${JSON.stringify(rec.photoUrls || {})}' title="Excluir">🗑️</button>
           </div>
