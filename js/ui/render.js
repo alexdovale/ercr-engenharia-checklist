@@ -1,6 +1,6 @@
 /**
  * js/render.js
- * Gerenciador de Renderização da Interface e do PDF (Sem cortes na Seção 13)
+ * Gerenciador de Renderização da Interface e do PDF (Completo com Seção 13)
  */
 
 const UIRender = {
@@ -69,6 +69,53 @@ const UIRender = {
 
       const body = document.createElement('div');
       body.className = 'sheet-body';
+
+      // Tratamento Exclusivo da Seção 13 na Tela
+      if (sec.n === 13) {
+        body.innerHTML = `
+          <div class="field" style="margin-bottom:15px;">
+            <label style="font-size:12px; font-weight:bold;">TIPO DE MOTOR</label>
+            <div class="opts" style="display:flex; gap:15px; margin-top:5px;">
+              <label class="opt"><input type="radio" name="tipoMotor13" value="ciclo_otto"> Ciclo Otto (Gasolina/Álcool/GNV)</label>
+              <label class="opt"><input type="radio" name="tipoMotor13" value="diesel"> Diesel</label>
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field"><label>RPM Marcha Lenta</label><input type="text" id="rpmLenta" placeholder="ex: 800"></div>
+            <div class="field"><label>RPM Alta</label><input type="text" id="rpmAlta" placeholder="ex: 2500"></div>
+            <div class="field"><label>Nível de Ruído (dB)</label><input type="text" id="nivelRuido" placeholder="ex: 85"></div>
+            <div class="field"><label>Limite Permitido (dB)</label><input type="text" id="limiteRuido" placeholder="ex: 95"></div>
+          </div>
+          <h3 style="font-size:12px; margin-top:20px; margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid #eee;">MEDIÇÕES DE GASES / OPACIDADE</h3>
+          <div class="field-grid">
+            <div class="field"><label>CO (%) - Lenta</label><input type="text" id="coLenta"></div>
+            <div class="field"><label>CO (%) - Alta</label><input type="text" id="coAlta"></div>
+            <div class="field"><label>HC (ppm) - Lenta</label><input type="text" id="hcLenta"></div>
+            <div class="field"><label>HC (ppm) - Alta</label><input type="text" id="hcAlta"></div>
+            <div class="field"><label>Fator Lambda (Alta)</label><input type="text" id="lambdaAlta"></div>
+            <div class="field" style="grid-column:1/-1"><label>Opacidade (k) - Veículos Diesel</label><input type="text" id="opacidade" placeholder="Valor medido"></div>
+          </div>
+          <div class="field" style="margin-top:15px;">
+            <label style="font-size:12px; font-weight:bold;">RESULTADO DA AVALIAÇÃO DE EMISSÕES</label>
+            <div class="opts" style="display:flex; gap:15px; margin-top:5px;">
+              <label class="opt c" data-val="conforme"><input type="radio" name="resultEmissoes" value="conforme"> Aprovado (Conforme)</label>
+              <label class="opt nc" data-val="nao_conforme"><input type="radio" name="resultEmissoes" value="nao_conforme"> Reprovado (Não Conforme)</label>
+              <label class="opt na" data-val="na"><input type="radio" name="resultEmissoes" value="na"> N/A (Isento)</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Foto do Equipamento / Ticket de Medição</label>
+            <div class="photo-cell" data-photo-item="s13-ticket" style="align-items:flex-start; margin-top:5px;">
+              <button type="button" class="photo-btn" title="Anexar foto">📷 Anexar Foto do Ticket</button>
+              <input type="file" accept="image/*" style="display:none">
+              <div class="photo-thumb-wrap"></div>
+            </div>
+          </div>
+        `;
+        sheet.appendChild(body);
+        container.appendChild(sheet);
+        return; // Sai do forEach para não tentar renderizar como itens normais
+      }
 
       if (Array.isArray(sec.items)) {
         sec.items.forEach((item, idx) => {
@@ -170,10 +217,15 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
+    // 🔥 LOGO OFICIAL DEFINIDA AQUI 🔥
+    const logoOficialUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+
     let html = '<div style="width: 100%;">';
 
+    // 🔥 TOPO DO LAUDO COM A LOGO INJETADA 🔥
     html += `
       <div class="pr-header-block">
+        <img src="${logoOficialUrl}" class="pr-top-logo" alt="ERCR Engenharia">
         <h1 class="pr-title">CHECKLIST DE INSPEÇÃO E PERÍCIA TÉCNICA VEICULAR</h1>
         ${currentSeq ? `<div class="pr-seq">${UIRender.formatSeq(currentSeq)}</div>` : ''}
       </div>
@@ -224,10 +276,10 @@ const UIRender = {
                <div><strong>1.12 Implemento/Carroceria:</strong> ${esc(v('implemento'))}</div>
              </div>`;
 
-    // Desenha as seções de 2 a 13
+    // Desenha as seções de 2 a 12 (Pula a 13 para tratar separadamente)
     if (Array.isArray(sectionsArray)) {
       sectionsArray.forEach(sec => {
-        if (sec.n >= 2 && sec.n <= 13) {
+        if (sec.n >= 2 && sec.n <= 12) {
           html += `<div class="pr-section-title">${sec.n}. ${esc((sec.title || '').toUpperCase())}</div>
                    <table class="pr-table">
                      <thead>
@@ -260,6 +312,47 @@ const UIRender = {
           html += `</tbody></table>`;
         }
       });
+    }
+
+    // Tratamento exclusivo para impressão da Seção 13
+    const sec13 = sectionsArray.find(s => s.n === 13);
+    if (sec13) {
+      const tipoMot = radioVal('tipoMotor13');
+      const resEmissoes = radioVal('resultEmissoes');
+      const ticketPhoto = photoSrc('s13-ticket');
+
+      html += `<div class="pr-section-title">13. ${esc((sec13.title || '').toUpperCase())}</div>
+               
+               <div class="pr-field-line" style="margin-bottom:8px;">
+                 <strong>Tipo de Motor:</strong> 
+                 ${checkCircle(tipoMot === 'ciclo_otto')} Ciclo Otto &nbsp;&nbsp;&nbsp; 
+                 ${checkCircle(tipoMot === 'diesel')} Diesel
+               </div>
+               
+               <table class="pr-table" style="margin-bottom:8px;">
+                 <thead><tr><th>Medições</th><th>Valores</th></tr></thead>
+                 <tbody>
+                   <tr><td>RPM Marcha Lenta</td><td>${esc(v('rpmLenta'))}</td></tr>
+                   <tr><td>RPM Alta</td><td>${esc(v('rpmAlta'))}</td></tr>
+                   <tr><td>Nível de Ruído (dB) / Limite Permitido</td><td>Medido: ${esc(v('nivelRuido'))} | Limite: ${esc(v('limiteRuido'))}</td></tr>
+                   <tr><td>CO (%) - Lenta / Alta</td><td>Lenta: ${esc(v('coLenta'))} | Alta: ${esc(v('coAlta'))}</td></tr>
+                   <tr><td>HC (ppm) - Lenta / Alta</td><td>Lenta: ${esc(v('hcLenta'))} | Alta: ${esc(v('hcAlta'))}</td></tr>
+                   <tr><td>Fator Lambda (Alta)</td><td>${esc(v('lambdaAlta'))}</td></tr>
+                   <tr><td>Opacidade (k) - Diesel</td><td>${esc(v('opacidade'))}</td></tr>
+                 </tbody>
+               </table>
+               
+               <div class="pr-field-line" style="margin-bottom:8px;">
+                 <strong>Resultado da Avaliação de Emissões:</strong> 
+                 ${checkCircle(resEmissoes === 'conforme')} Aprovado &nbsp;&nbsp; 
+                 ${checkCircle(resEmissoes === 'nao_conforme')} Reprovado &nbsp;&nbsp; 
+                 ${checkCircle(resEmissoes === 'na')} N/A (Isento)
+               </div>
+               
+               ${ticketPhoto ? `
+                 <div class="pr-field-line"><strong>Anexo (Ticket de Medição / Foto):</strong></div>
+                 <div class="pr-photo-block"><img class="pr-photo-thumb" src="${ticketPhoto}" style="max-width:300px;"></div>
+               ` : ''}`;
     }
 
     // CONTINUA O FLUXO DIRETO PARA A SEÇÃO 14 (Sem quebrar a DIV principal)
