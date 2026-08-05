@@ -1,323 +1,326 @@
-/**
- * css/print.css
- * Estilos otimizados para Impressão e Geração de PDF (Padrão ERCR Engenharia)
- */
+/
+
+css/print.css
+
+Estilos otimizados para Impressão e Geração de PDF (Padrão ERCR Engenharia)
+*/
 
 @media print {
-    /* ===== Configuração da Página A4 ===== */
-    @page {
-      size: 210mm 297mm; /* Força as dimensões físicas exatas do A4 */
-      margin: 12mm 14mm 80mm 14mm; /* 🔥 80mm força o texto a parar bem antes da borda inferior */
-    }
+/* ===== Configuração da Página A4 ===== /
+@page {
+size: 210mm 297mm;
+/ 🔥 MATEMÁTICA CORRIGIDA: 50mm no fundo dá muito mais espaço para o seu texto */
+margin: 12mm 14mm 50mm 14mm;
+}
 
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
+{
+-webkit-print-color-adjust: exact !important;
+print-color-adjust: exact !important;
+}
 
-  /* ==========================================
-     🔥 BLOCO ANTI-CORTE DE PÁGINAS 🔥
-     ========================================== */
-  html, body, #print-report {
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    position: static !important;
-    background: transparent !important;
-    color: #1a1a1a !important;
-    font-family: 'IBM Plex Sans', Arial, sans-serif;
-    font-size: 10pt;
-    line-height: 1.35;
-    margin: 0;
-    padding: 0;
-  }
+/* ==========================================
+🔥 BLOCO ANTI-CORTE DE PÁGINAS (Evita páginas em branco) 🔥
+========================================== */
+html, body, #print-report {
+display: block !important;
+width: 100% !important;
+height: auto !important;
+min-height: 0 !important;
+max-height: none !important;
+overflow: visible !important;
+position: static !important;
+background: transparent !important;
+color: #1a1a1a !important;
+font-family: 'IBM Plex Sans', Arial, sans-serif;
+font-size: 10pt;
+line-height: 1.35;
+margin: 0 !important;
+padding: 0 !important;
+}
 
-  /* Oculta interface do aplicativo no PDF */
-  header.dash, 
-  .actions, 
-  #screen-lock, 
-  #screen-list, 
-  #screen-form, 
-  .dash-controls, 
-  #fipe-loading, 
-  #fipe-error {
-    display: none !important;
-  }
+/* Oculta interface do aplicativo no PDF */
+header.dash,
+.actions,
+#screen-lock,
+#screen-list,
+#screen-form,
+.dash-controls,
+#fipe-loading,
+#fipe-error {
+display: none !important;
+}
 
-  /* ==========================================
-     1. MARCA D'ÁGUA E LOGO TOPO
-     ========================================== */
-  body::before {
-    content: "";
-    position: fixed; 
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    /* 🔥 Forçando a logo correta no fundo da página */
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png') !important;
-    background-size: 60%;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.04; 
-    z-index: -1; 
-    pointer-events: none;
-  }
+/* ==========================================
+1. MARCA D'ÁGUA E LOGO TOPO
+========================================== */
+body::before {
+content: "";
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png') !important;
+background-size: 60%;
+background-repeat: no-repeat;
+background-position: center;
+opacity: 0.04;
+z-index: -1;
+pointer-events: none;
+}
 
-  .pr-top-logo {
-    display: block;
-    margin: 0 auto 15px auto;
-    max-width: 220px;
-    height: auto;
-  }
+.pr-top-logo {
+display: block;
+margin: 0 auto 15px auto;
+max-width: 220px;
+height: auto;
+}
 
-  /* ==========================================
-     2. RODAPÉ FIXO
-     ========================================== */
-  .pr-footer {
-    position: fixed;
-    bottom: -80mm; /* 🔥 Desce o rodapé até a base da folha física */
-    left: -14mm;   
-    width: calc(100% + 28mm); 
-    height: 65mm;  /* 🔥 Altura do rodapé de 65mm. Deixa 15mm de "respiro" em relação ao texto */
-    display: block; 
-    z-index: 9999;
-    transform: translateZ(0); 
-  }
+/* ==========================================
+2. RODAPÉ FIXO (Compacto e bem posicionado)
+========================================== /
+.pr-footer {
+position: fixed;
+bottom: -50mm; / 🔥 Tem que ser idêntico ao 50mm do @page /
+left: -14mm;
 
-  .pr-footer img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover; /* Garante que a imagem preencha a área sem distorcer */
-    object-position: bottom;
-  }
+width: calc(100% + 28mm);
+height: 40mm;  / 🔥 Rodapé mais estreito. Como a margem é 50 e ele tem 40, sobra 10mm de "respiro" exato para o texto! */
+display: block;
+z-index: 9999;
+transform: translateZ(0);
+}
 
-  /* ==========================================
-     3. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
-     ========================================== */
-  .pr-page {
-    display: block !important;
-    position: static !important;
-  }
+.pr-footer img {
+width: 100%;
+height: 100%;
+display: block;
+object-fit: cover;
+object-position: bottom;
+}
 
-  .pr-table tr,
-  .pr-nc-block,
-  .pr-special-row,
-  .pr-photo-block,
-  .pr-field-pair {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
+/* ==========================================
+3. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
+========================================== */
+.pr-page {
+display: block !important;
+position: static !important;
+}
 
-  .pr-section-title {
-    break-after: avoid;
-    page-break-after: avoid;
-    background-color: #111 !important;
-    color: #fff !important;
-    font-size: 9pt;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 5px 10px;
-    margin-top: 14px;
-    margin-bottom: 8px;
-    letter-spacing: 0.6px;
-    border-radius: 2px;
-  }
+.pr-table tr,
+.pr-nc-block,
+.pr-special-row,
+.pr-photo-block,
+.pr-field-pair {
+break-inside: avoid;
+page-break-inside: avoid;
+}
 
-  /* ===== ESTILOS GERAIS DO DOCUMENTO ===== */
-  .pr-header-block { 
-    border-bottom: 2px solid #111; 
-    padding-bottom: 8px; 
-    margin-bottom: 14px; 
-    text-align: center;
-  }
+.pr-section-title {
+break-after: avoid;
+page-break-after: avoid;
+background-color: #111 !important;
+color: #fff !important;
+font-size: 9pt;
+font-weight: 700;
+text-transform: uppercase;
+padding: 5px 10px;
+margin-top: 14px;
+margin-bottom: 8px;
+letter-spacing: 0.6px;
+border-radius: 2px;
+}
 
-  .pr-title { 
-    font-size: 14pt; 
-    font-weight: 700; 
-    text-align: center; 
-    text-transform: uppercase; 
-    margin: 0 0 3px 0; 
-    letter-spacing: 0.6px; 
-    color: #000; 
-  }
+/* ===== ESTILOS GERAIS DO DOCUMENTO ===== */
+.pr-header-block {
+border-bottom: 2px solid #111;
+padding-bottom: 8px;
+margin-bottom: 14px;
+text-align: center;
+}
 
-  .pr-seq { 
-    text-align: center; 
-    font-size: 9.5pt; 
-    font-weight: 500; 
-    margin: 0 0 10px 0; 
-    color: #444; 
-    letter-spacing: 0.3px; 
-  }
+.pr-title {
+font-size: 14pt;
+font-weight: 700;
+text-align: center;
+text-transform: uppercase;
+margin: 0 0 3px 0;
+letter-spacing: 0.6px;
+color: #000;
+}
 
-  .pr-field-line { 
-    font-size: 9pt; 
-    margin-bottom: 4px; 
-    padding-bottom: 2px; 
-    border-bottom: 1px dotted #ddd; 
-  }
+.pr-seq {
+text-align: center;
+font-size: 9.5pt;
+font-weight: 500;
+margin: 0 0 10px 0;
+color: #444;
+letter-spacing: 0.3px;
+}
 
-  .pr-field-line strong, 
-  .pr-field-pair strong { 
-    font-weight: 600; 
-    color: #000; 
-  }
+.pr-field-line {
+font-size: 9pt;
+margin-bottom: 4px;
+padding-bottom: 2px;
+border-bottom: 1px dotted #ddd;
+}
 
-  .pr-field-pair { 
-    display: flex; 
-    justify-content: space-between; 
-    font-size: 9pt; 
-    margin-bottom: 4px; 
-    gap: 18px; 
-    padding-bottom: 2px; 
-    border-bottom: 1px dotted #ddd; 
-  }
+.pr-field-line strong,
+.pr-field-pair strong {
+font-weight: 600;
+color: #000;
+}
 
-  .pr-field-pair > div { 
-    flex: 1; 
-  }
+.pr-field-pair {
+display: flex;
+justify-content: space-between;
+font-size: 9pt;
+margin-bottom: 4px;
+gap: 18px;
+padding-bottom: 2px;
+border-bottom: 1px dotted #ddd;
+}
 
-  .pr-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin-bottom: 10px; 
-    font-size: 8.5pt; 
-  }
+.pr-field-pair > div {
+flex: 1;
+}
 
-  .pr-table th { 
-    background-color: #222 !important; 
-    color: #fff !important; 
-    font-weight: 700; 
-    text-align: left; 
-    padding: 4px 8px; 
-    border: 1px solid #222; 
-    text-transform: uppercase; 
-    font-size: 8pt; 
-    letter-spacing: 0.3px; 
-  }
+.pr-table {
+width: 100%;
+border-collapse: collapse;
+margin-bottom: 10px;
+font-size: 8.5pt;
+}
 
-  /* Mantém as linhas divisórias sem pintar o fundo */
-  .pr-table td { 
-    padding: 4px 8px; 
-    border: 1px solid #ccc; 
-    vertical-align: middle; 
-    background-color: transparent !important;
-  }
+.pr-table th {
+background-color: #222 !important;
+color: #fff !important;
+font-weight: 700;
+text-align: left;
+padding: 4px 8px;
+border: 1px solid #222;
+text-transform: uppercase;
+font-size: 8pt;
+letter-spacing: 0.3px;
+}
 
-  .pr-item-cell { 
-    width: 65%; 
-  }
+/* Mantém as linhas divisórias sem pintar o fundo */
+.pr-table td {
+padding: 4px 8px;
+border: 1px solid #ccc;
+vertical-align: middle;
+background-color: transparent !important;
+}
 
-  .pr-circle-cell { 
-    text-align: center; 
-    width: 12%; 
-  }
+.pr-item-cell {
+width: 65%;
+}
 
-  .pr-circle { 
-    display: inline-block; 
-    width: 11px; 
-    height: 11px; 
-    border: 1.5px solid #000; 
-    border-radius: 50%; 
-    vertical-align: middle; 
-  }
+.pr-circle-cell {
+text-align: center;
+width: 12%;
+}
 
-  .pr-circle.filled { 
-    background-color: #000 !important; 
-  }
+.pr-circle {
+display: inline-block;
+width: 11px;
+height: 11px;
+border: 1.5px solid #000;
+border-radius: 50%;
+vertical-align: middle;
+}
 
-  .pr-checkbox { 
-    display: inline-block; 
-    width: 11px; 
-    height: 11px; 
-    border: 1.5px solid #000; 
-    margin-right: 6px; 
-    vertical-align: middle; 
-    border-radius: 2px; 
-  }
+.pr-circle.filled {
+background-color: #000 !important;
+}
 
-  .pr-checkbox.checked { 
-    background-color: #000 !important; 
-  }
+.pr-checkbox {
+display: inline-block;
+width: 11px;
+height: 11px;
+border: 1.5px solid #000;
+margin-right: 6px;
+vertical-align: middle;
+border-radius: 2px;
+}
 
-  .pr-special-row { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    font-size: 8.5pt; 
-    padding: 5px 8px; 
-    border: 1px solid #ddd; 
-    border-left: 3px solid #111; 
-    margin-bottom: 4px; 
-    border-radius: 2px; 
-  }
+.pr-checkbox.checked {
+background-color: #000 !important;
+}
 
-  .pr-special-opts { 
-    display: flex; 
-    gap: 12px; 
-    font-size: 8pt; 
-  }
+.pr-special-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+font-size: 8.5pt;
+padding: 5px 8px;
+border: 1px solid #ddd;
+border-left: 3px solid #111;
+margin-bottom: 4px;
+border-radius: 2px;
+}
 
-  .pr-special-opts span { 
-    display: flex; 
-    align-items: center; 
-    gap: 4px; 
-  }
+.pr-special-opts {
+display: flex;
+gap: 12px;
+font-size: 8pt;
+}
 
-  .pr-nc-block { 
-    border: 1px solid #bbb; 
-    border-left: 4px solid #b00020; 
-    padding: 8px 10px; 
-    margin-bottom: 8px; 
-    font-size: 8.5pt; 
-    border-radius: 2px; 
-    background-color: #fff !important; 
-  }
+.pr-special-opts span {
+display: flex;
+align-items: center;
+gap: 4px;
+}
 
-  .pr-nc-block h4 { 
-    margin: 0 0 6px 0; 
-    font-size: 9pt; 
-    font-weight: 700; 
-    color: #b00020; 
-    border-bottom: 1px solid #eee; 
-    padding-bottom: 3px; 
-    text-transform: uppercase; 
-    letter-spacing: 0.3px; 
-  }
+.pr-nc-block {
+border: 1px solid #bbb;
+border-left: 4px solid #b00020;
+padding: 8px 10px;
+margin-bottom: 8px;
+font-size: 8.5pt;
+border-radius: 2px;
+background-color: #fff !important;
+}
 
-  .pr-crit-row { 
-    display: flex; 
-    gap: 15px; 
-    margin-top: 6px; 
-    font-size: 8pt; 
-    color: #333; 
-  }
+.pr-nc-block h4 {
+margin: 0 0 6px 0;
+font-size: 9pt;
+font-weight: 700;
+color: #b00020;
+border-bottom: 1px solid #eee;
+padding-bottom: 3px;
+text-transform: uppercase;
+letter-spacing: 0.3px;
+}
 
-  .pr-photo-thumb { 
-    display: block; 
-    width: 100%; 
-    max-width: 260px; 
-    max-height: 190px; 
-    object-fit: cover; 
-    margin-top: 4px; 
-    border: 1px solid #999; 
-    border-radius: 3px; 
-  }
+.pr-crit-row {
+display: flex;
+gap: 15px;
+margin-top: 6px;
+font-size: 8pt;
+color: #333;
+}
 
-  .pr-item-cell .pr-photo-block { 
-    max-width: 220px; 
-  }
+.pr-photo-thumb {
+display: block;
+width: 100%;
+max-width: 260px;
+max-height: 190px;
+object-fit: cover;
+margin-top: 4px;
+border: 1px solid #999;
+border-radius: 3px;
+}
 
-  .pr-signature-img { 
-    max-height: 45px; 
-    max-width: 200px; 
-    object-fit: contain; 
-    display: block; 
-    margin-top: 3px; 
-  }
+.pr-item-cell .pr-photo-block {
+max-width: 220px;
+}
+
+.pr-signature-img {
+max-height: 45px;
+max-width: 200px;
+object-fit: contain;
+display: block;
+margin-top: 3px;
+}
 }
