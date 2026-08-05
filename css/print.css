@@ -7,7 +7,7 @@
     /* ===== Configuração da Página A4 ===== */
     @page {
       size: 210mm 297mm; /* Força as dimensões físicas exatas do A4 */
-      margin: 12mm 14mm 65mm 14mm; 
+      margin: 12mm 14mm 80mm 14mm; /* 🔥 80mm força o texto a parar bem antes da borda inferior */
     }
 
   * {
@@ -57,7 +57,8 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png');
+    /* 🔥 Forçando a logo correta no fundo da página */
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png') !important;
     background-size: 60%;
     background-repeat: no-repeat;
     background-position: center;
@@ -78,10 +79,10 @@
      ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: -65mm; /* 🔥 Desce a imagem até o limite físico do papel */
-    left: -14mm;   /* 🔥 Puxa a imagem para a beirada esquerda */
-    width: calc(100% + 28mm); /* 🔥 Preenche de ponta a ponta compensando as margens laterais */
-    height: 65mm; 
+    bottom: -80mm; /* 🔥 Desce o rodapé até a base da folha física */
+    left: -14mm;   
+    width: calc(100% + 28mm); 
+    height: 65mm;  /* 🔥 Altura do rodapé de 65mm. Deixa 15mm de "respiro" em relação ao texto */
     display: block; 
     z-index: 9999;
     transform: translateZ(0); 
