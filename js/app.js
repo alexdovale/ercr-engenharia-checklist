@@ -52,7 +52,8 @@ function handleRoute() {
   switch (rota) {
     case '#lista':
       if(screenList) screenList.style.display = 'block';
-      loadList(); 
+      // Chama a função globalmente
+      if(typeof window.loadList === 'function') window.loadList(); 
       break;
 
     case '#form':
@@ -114,8 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // CARREGAR LISTA
-  async function loadList() {
+  // CARREGAR LISTA (Agora atrelada ao window para o Router enxergar)
+  window.loadList = async function() {
     if(!listContainer) return;
     listContainer.innerHTML = '<div class="list-loading">Carregando inspeções…</div>';
     try {
@@ -161,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = btn.dataset.id;
             const photos = JSON.parse(btn.dataset.photos || '{}');
             await StorageService.deleteInspection(id, photos);
-            loadList();
+            window.loadList(); // Chama a função corrigida
           }
         });
       });
