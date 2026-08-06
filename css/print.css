@@ -91,7 +91,7 @@
     /* 2️⃣ PARA REDUZIR O TAMANHO DA IMAGEM:
        Mude o 40mm. Quanto MENOR o número (ex: 35mm, 30mm),
        menor a imagem vai ficar. */
-    height: 40mm;  /* ⬅️ MEXA AQUI PARA MUDAR O TAMANHO */
+    height: 30mm;  /* ⬅️ MEXA AQUI PARA MUDAR O TAMANHO */
 
     display: block; 
     z-index: 9999;
