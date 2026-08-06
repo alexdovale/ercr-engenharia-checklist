@@ -83,9 +83,9 @@
     /* 1️⃣ PARA SUBIR O RODAPÉ NA FOLHA:
        Mude o -60mm. Quanto mais PRÓXIMO DE ZERO (ex: -55mm, -50mm), 
        mais o rodapé vai SUBIR na folha. */
-    bottom: -05mm; /* ⬅️ MEXA AQUI PARA SUBIR/DESCER */
+    bottom: -10mm; /* ⬅️ MEXA AQUI PARA SUBIR/DESCER */
 
-    left: -12mm;   
+    left: -8mm;   
     width: calc(100% + 28mm); 
     
     /* 2️⃣ PARA REDUZIR O TAMANHO DA IMAGEM:
