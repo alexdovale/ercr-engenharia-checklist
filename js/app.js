@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = btn.dataset.id;
             const photos = JSON.parse(btn.dataset.photos || '{}');
             await StorageService.deleteInspection(id, photos);
-            window.loadList(); // Chama a função corrigida
+            window.loadList(); 
           }
         });
       });
@@ -353,12 +353,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // =========================================================
+  // BOTÃO GERAR PDF (Bloqueio de Imagens Atualizado)
+  // =========================================================
   const btnPdf = document.getElementById('btn-pdf');
   if(btnPdf) {
     btnPdf.addEventListener('click', async () => {
       try {
         const originalText = btnPdf.textContent;
-        btnPdf.textContent = '⏳ Gerando...';
+        btnPdf.textContent = '⏳ Baixando Imagens...';
         btnPdf.disabled = true;
 
         if (!currentSeq && typeof StorageService !== 'undefined') {
@@ -372,12 +375,34 @@ document.addEventListener('DOMContentLoaded', () => {
           UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
         }
         
-        // 🔥 ATRASO PROPOSITAL PARA O CELULAR RENDERIZAR AS IMAGENS CORRETAMENTE 🔥
-        setTimeout(() => {
-          window.print();
-          btnPdf.textContent = originalText;
-          btnPdf.disabled = false;
-        }, 800);
+        // Bloqueia até todas as imagens aparecerem no HTML
+        const reportDiv = document.getElementById('print-report');
+        const images = Array.from(reportDiv.querySelectorAll('img'));
+        let loaded = 0;
+
+        const checkDone = () => {
+          loaded++;
+          if (loaded >= images.length) {
+            setTimeout(() => {
+              window.print();
+              btnPdf.textContent = originalText;
+              btnPdf.disabled = false;
+            }, 150);
+          }
+        };
+
+        if (images.length === 0) {
+          checkDone();
+        } else {
+          images.forEach(img => {
+            if (img.complete) {
+              checkDone();
+            } else {
+              img.onload = checkDone;
+              img.onerror = checkDone; 
+            }
+          });
+        }
 
       } catch (err) {
         alert("Erro: " + err.message);
@@ -397,15 +422,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // =========================================================
+  // BOTÃO RECIBO (Bloqueio de Imagens Atualizado)
+  // =========================================================
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
     btnReceipt.addEventListener('click', () => {
+      const originalText = btnReceipt.textContent;
+      btnReceipt.textContent = '⏳ Baixando Imagens...';
+      btnReceipt.disabled = true;
+
       const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
       const cnpj = document.getElementById('cnpj')?.value || '00.000.000/0000-00';
       if(typeof UIRender !== 'undefined') UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
       
-      // Atraso também no recibo por precaução
-      setTimeout(() => window.print(), 500);
+      const reportDiv = document.getElementById('print-report');
+      const images = Array.from(reportDiv.querySelectorAll('img'));
+      let loaded = 0;
+
+      const checkDone = () => {
+        loaded++;
+        if (loaded >= images.length) {
+          setTimeout(() => {
+            window.print();
+            btnReceipt.textContent = originalText;
+            btnReceipt.disabled = false;
+          }, 150);
+        }
+      };
+
+      if (images.length === 0) {
+        checkDone();
+      } else {
+        images.forEach(img => {
+          if (img.complete) checkDone();
+          else { img.onload = checkDone; img.onerror = checkDone; }
+        });
+      }
     });
   }
 
