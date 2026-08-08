@@ -76,8 +76,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png') !important;
-    background-size: 60%;
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png') !important;    background-size: 60%;
     background-repeat: no-repeat;
     background-position: center;
     opacity: 0.04; 
