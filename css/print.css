@@ -1,24 +1,22 @@
 /**
  * css/print.css
- * Estilos otimizados para Impressão e Geração de PDF (Padrão ERCR Engenharia)
+ * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
  */
 
 @media print {
-  /* ===== Configuração da Página A4 ===== */
+  /* 1. ZERA A MARGEM FÍSICA: Permite que o rodapé vaze até o limite do papel */
   @page {
-    size: 210mm 297mm; /* Força as dimensões físicas exatas do A4 */
-    /* 🔥 MATEMÁTICA CORRIGIDA: 60mm no fundo trava o texto muito antes do fim da folha */
-    margin: 12mm 14mm 60mm 14mm; 
+    size: 210mm 297mm;
+    margin: 0mm !important; 
   }
 
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box;
   }
 
-  /* ==========================================
-     🔥 BLOCO ANTI-CORTE DE PÁGINAS 🔥
-     ========================================== */
+  /* 2. RECUPERA A MARGEM LATERAL: Aplica apenas no conteúdo, protegendo o texto */
   html, body, #print-report {
     display: block !important;
     width: 100% !important;
@@ -33,7 +31,16 @@
     font-size: 10pt;
     line-height: 1.35;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0 14mm !important; /* Margem esquerda e direita do texto */
+  }
+
+  /* 3. MARGENS TOPO E FUNDO: O cabeçalho e rodapé da tabela empurram o texto */
+  #print-report > table > thead > tr > td {
+    height: 12mm; /* Cria a margem superior em TODAS as páginas */
+  }
+  
+  #print-report > table > tfoot > tr > td {
+    height: 55mm; /* Reserva o espaço do rodapé em TODAS as páginas */
   }
 
   /* Oculta interface do aplicativo no PDF */
@@ -48,9 +55,6 @@
     display: none !important;
   }
 
-  /* ==========================================
-     1. MARCA D'ÁGUA E LOGO TOPO
-     ========================================== */
   body::before {
     content: "";
     position: fixed; 
@@ -75,249 +79,57 @@
   }
 
   /* ==========================================
-     2. RODAPÉ FIXO (Preenchendo Toda a Borda)
+     4. RODAPÉ DE PONTA A PONTA (FULL BLEED)
      ========================================== */
   .pr-footer {
     position: fixed;
-    /* Puxa a imagem exatamente na mesma medida da margem do @page para anular o espaço */
-    bottom: -12mm; 
-    left: -14mm;   
-    /* A largura é o 100% do centro + 14mm da esquerda + 14mm da direita */
-    width: calc(100% + 28mm); 
+    bottom: 0;
+    left: 0;
+    width: 210mm; /* Preenche a largura total do A4 zerado */
+    height: 51mm; /* Mantém a proporção do rodapé da ERCR */
     display: block; 
     z-index: 9999;
   }
 
   .pr-footer img {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
-    /* Isso garante que a imagem se estique para tocar as bordas e mantenha a proporção */
-    object-fit: contain; 
+    object-fit: cover; /* Garante que o preto pinte todos os cantos */
+    object-position: bottom;
   }
-  
+
   /* ==========================================
-     3. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
+     5. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
      ========================================== */
-  .pr-page {
-    display: block !important;
-    position: static !important;
-  }
-
-  .pr-table tr,
-  .pr-nc-block,
-  .pr-special-row,
-  .pr-photo-block,
-  .pr-field-pair {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .pr-section-title {
-    break-after: avoid;
-    page-break-after: avoid;
-    background-color: #111 !important;
-    color: #fff !important;
-    font-size: 9pt;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 5px 10px;
-    margin-top: 14px;
-    margin-bottom: 8px;
-    letter-spacing: 0.6px;
-    border-radius: 2px;
-  }
+  .pr-page { display: block !important; position: static !important; }
+  .pr-table tr, .pr-nc-block, .pr-special-row, .pr-photo-block, .pr-field-pair { break-inside: avoid; page-break-inside: avoid; }
+  .pr-section-title { break-after: avoid; page-break-after: avoid; background-color: #111 !important; color: #fff !important; font-size: 9pt; font-weight: 700; text-transform: uppercase; padding: 5px 10px; margin-top: 14px; margin-bottom: 8px; letter-spacing: 0.6px; border-radius: 2px; }
 
   /* ===== ESTILOS GERAIS DO DOCUMENTO ===== */
-  .pr-header-block { 
-    border-bottom: 2px solid #111; 
-    padding-bottom: 8px; 
-    margin-bottom: 14px; 
-    text-align: center;
-  }
-
-  .pr-title { 
-    font-size: 14pt; 
-    font-weight: 700; 
-    text-align: center; 
-    text-transform: uppercase; 
-    margin: 0 0 3px 0; 
-    letter-spacing: 0.6px; 
-    color: #000; 
-  }
-
-  .pr-seq { 
-    text-align: center; 
-    font-size: 9.5pt; 
-    font-weight: 500; 
-    margin: 0 0 10px 0; 
-    color: #444; 
-    letter-spacing: 0.3px; 
-  }
-
-  .pr-field-line { 
-    font-size: 9pt; 
-    margin-bottom: 4px; 
-    padding-bottom: 2px; 
-    border-bottom: 1px dotted #ddd; 
-  }
-
-  .pr-field-line strong, 
-  .pr-field-pair strong { 
-    font-weight: 600; 
-    color: #000; 
-  }
-
-  .pr-field-pair { 
-    display: flex; 
-    justify-content: space-between; 
-    font-size: 9pt; 
-    margin-bottom: 4px; 
-    gap: 18px; 
-    padding-bottom: 2px; 
-    border-bottom: 1px dotted #ddd; 
-  }
-
-  .pr-field-pair > div { 
-    flex: 1; 
-  }
-
-  .pr-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin-bottom: 10px; 
-    font-size: 8.5pt; 
-  }
-
-  .pr-table th { 
-    background-color: #222 !important; 
-    color: #fff !important; 
-    font-weight: 700; 
-    text-align: left; 
-    padding: 4px 8px; 
-    border: 1px solid #222; 
-    text-transform: uppercase; 
-    font-size: 8pt; 
-    letter-spacing: 0.3px; 
-  }
-
-  /* Mantém as linhas divisórias sem pintar o fundo */
-  .pr-table td { 
-    padding: 4px 8px; 
-    border: 1px solid #ccc; 
-    vertical-align: middle; 
-    background-color: transparent !important;
-  }
-
-  .pr-item-cell { 
-    width: 65%; 
-  }
-
-  .pr-circle-cell { 
-    text-align: center; 
-    width: 12%; 
-  }
-
-  .pr-circle { 
-    display: inline-block; 
-    width: 11px; 
-    height: 11px; 
-    border: 1.5px solid #000; 
-    border-radius: 50%; 
-    vertical-align: middle; 
-  }
-
-  .pr-circle.filled { 
-    background-color: #000 !important; 
-  }
-
-  .pr-checkbox { 
-    display: inline-block; 
-    width: 11px; 
-    height: 11px; 
-    border: 1.5px solid #000; 
-    margin-right: 6px; 
-    vertical-align: middle; 
-    border-radius: 2px; 
-  }
-
-  .pr-checkbox.checked { 
-    background-color: #000 !important; 
-  }
-
-  .pr-special-row { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    font-size: 8.5pt; 
-    padding: 5px 8px; 
-    border: 1px solid #ddd; 
-    border-left: 3px solid #111; 
-    margin-bottom: 4px; 
-    border-radius: 2px; 
-  }
-
-  .pr-special-opts { 
-    display: flex; 
-    gap: 12px; 
-    font-size: 8pt; 
-  }
-
-  .pr-special-opts span { 
-    display: flex; 
-    align-items: center; 
-    gap: 4px; 
-  }
-
-  .pr-nc-block { 
-    border: 1px solid #bbb; 
-    border-left: 4px solid #b00020; 
-    padding: 8px 10px; 
-    margin-bottom: 8px; 
-    font-size: 8.5pt; 
-    border-radius: 2px; 
-    background-color: #fff !important; 
-  }
-
-  .pr-nc-block h4 { 
-    margin: 0 0 6px 0; 
-    font-size: 9pt; 
-    font-weight: 700; 
-    color: #b00020; 
-    border-bottom: 1px solid #eee; 
-    padding-bottom: 3px; 
-    text-transform: uppercase; 
-    letter-spacing: 0.3px; 
-  }
-
-  .pr-crit-row { 
-    display: flex; 
-    gap: 15px; 
-    margin-top: 6px; 
-    font-size: 8pt; 
-    color: #333; 
-  }
-
-  .pr-photo-thumb { 
-    display: block; 
-    width: 100%; 
-    max-width: 260px; 
-    max-height: 190px; 
-    object-fit: cover; 
-    margin-top: 4px; 
-    border: 1px solid #999; 
-    border-radius: 3px; 
-  }
-
-  .pr-item-cell .pr-photo-block { 
-    max-width: 220px; 
-  }
-
-  .pr-signature-img { 
-    max-height: 45px; 
-    max-width: 200px; 
-    object-fit: contain; 
-    display: block; 
-    margin-top: 3px; 
-  }
+  .pr-header-block { border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; text-align: center; }
+  .pr-title { font-size: 14pt; font-weight: 700; text-align: center; text-transform: uppercase; margin: 0 0 3px 0; letter-spacing: 0.6px; color: #000; }
+  .pr-seq { text-align: center; font-size: 9.5pt; font-weight: 500; margin: 0 0 10px 0; color: #444; letter-spacing: 0.3px; }
+  .pr-field-line { font-size: 9pt; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px dotted #ddd; }
+  .pr-field-line strong, .pr-field-pair strong { font-weight: 600; color: #000; }
+  .pr-field-pair { display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 4px; gap: 18px; padding-bottom: 2px; border-bottom: 1px dotted #ddd; }
+  .pr-field-pair > div { flex: 1; }
+  .pr-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8.5pt; }
+  .pr-table th { background-color: #222 !important; color: #fff !important; font-weight: 700; text-align: left; padding: 4px 8px; border: 1px solid #222; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.3px; }
+  .pr-table td { padding: 4px 8px; border: 1px solid #ccc; vertical-align: middle; background-color: transparent !important; }
+  .pr-item-cell { width: 65%; }
+  .pr-circle-cell { text-align: center; width: 12%; }
+  .pr-circle { display: inline-block; width: 11px; height: 11px; border: 1.5px solid #000; border-radius: 50%; vertical-align: middle; }
+  .pr-circle.filled { background-color: #000 !important; }
+  .pr-checkbox { display: inline-block; width: 11px; height: 11px; border: 1.5px solid #000; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+  .pr-checkbox.checked { background-color: #000 !important; }
+  .pr-special-row { display: flex; justify-content: space-between; align-items: center; font-size: 8.5pt; padding: 5px 8px; border: 1px solid #ddd; border-left: 3px solid #111; margin-bottom: 4px; border-radius: 2px; }
+  .pr-special-opts { display: flex; gap: 12px; font-size: 8pt; }
+  .pr-special-opts span { display: flex; align-items: center; gap: 4px; }
+  .pr-nc-block { border: 1px solid #bbb; border-left: 4px solid #b00020; padding: 8px 10px; margin-bottom: 8px; font-size: 8.5pt; border-radius: 2px; background-color: #fff !important; }
+  .pr-nc-block h4 { margin: 0 0 6px 0; font-size: 9pt; font-weight: 700; color: #b00020; border-bottom: 1px solid #eee; padding-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .pr-crit-row { display: flex; gap: 15px; margin-top: 6px; font-size: 8pt; color: #333; }
+  .pr-photo-thumb { display: block; width: 100%; max-width: 260px; max-height: 190px; object-fit: cover; margin-top: 4px; border: 1px solid #999; border-radius: 3px; }
+  .pr-item-cell .pr-photo-block { max-width: 220px; }
+  .pr-signature-img { max-height: 45px; max-width: 200px; object-fit: contain; display: block; margin-top: 3px; }
 }
