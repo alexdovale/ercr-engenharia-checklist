@@ -2,7 +2,6 @@
  * js/app.js
  * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router, E-mail e Correção de PDF
  */
-
 // ==========================================
 // VARIÁVEIS GLOBAIS DE CONTROLE
 // ==========================================
@@ -12,6 +11,20 @@ let currentRecordId = null;
 let photoUrls = {}; 
 let currentSeq = null;
 let emissionLog = [];
+
+// ==========================================
+// 🔥 PRÉ-CARREGAMENTO DE IMAGENS DO PDF 🔥
+// Garante que as imagens já estejam no cache antes do usuário tentar imprimir
+// ==========================================
+const preloadRodape = new Image();
+preloadRodape.src = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
+
+const preloadFundo = new Image();
+preloadFundo.src = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png';
+
+const preloadLogoTopo = new Image();
+preloadLogoTopo.src = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
+
 
 // ==========================================
 // 1. OBSERVADOR DE AUTENTICAÇÃO DO FIREBASE
