@@ -220,7 +220,18 @@ const UIRender = {
     // 🔥 LOGO OFICIAL DEFINIDA AQUI 🔥
     const logoOficialUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    let html = '<div style="width: 100%;">';
+    // 🔥 NOVO FORMATO DE ESTRUTURA PARA IMPRESSÃO PERFEITA 🔥
+    let html = `
+      <table style="width: 100%; border: none; border-collapse: collapse;">
+        <thead>
+          <tr><td style="border: none; padding: 0;">
+             <!-- O cabeçalho da tabela repete no topo de todas as páginas se houver espaço reservado -->
+          </td></tr>
+        </thead>
+        <tbody>
+          <tr><td style="border: none; padding: 0;">
+            <div style="width: 100%;">
+    `;
 
     // 🔥 TOPO DO LAUDO COM A LOGO INJETADA 🔥
     html += `
@@ -461,9 +472,21 @@ const UIRender = {
                </div>
              </div>`;
     
-    html += `</div>`; // Fim da grande caixa contínua que engloba o laudo todo
+    // 🔥 FECHAMENTO DA ESTRUTURA DE TABELA 🔥
+    html += `
+            </div> <!-- Fecha a div interna -->
+          </td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td style="border: none; padding: 0;">
+            <!-- O tfoot empurra o rodapé para baixo e impede que o texto invada a área da imagem -->
+            <div style="height: 55mm;"></div> 
+          </td></tr>
+        </tfoot>
+      </table>
+    `;
 
-    // Injeta a imagem do rodapé (o CSS cuida de fazer ela repetir no final das folhas físicas)
+    // Injeta a imagem do rodapé que agora ficará fixada no espaço reservado pelo tfoot
     html += UIRender.prFooterHTML();
 
     container.innerHTML = html;
