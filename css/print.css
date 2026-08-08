@@ -75,14 +75,15 @@
   }
 
   /* ==========================================
-     2. RODAPÉ FIXO (Alinhado à Área Segura)
+     2. RODAPÉ FIXO (Preenchendo Toda a Borda)
      ========================================== */
   .pr-footer {
     position: fixed;
-    bottom: 0;     /* Fica na base exata da área segura da página */
-    left: 0;       /* Alinha perfeitamente com a margem esquerda do texto */
-    width: 100%;   /* Ocupa 100% da largura útil, sem vazar pro corte do papel */
-    height: auto;  /* Deixa a altura se ajustar sozinha */
+    /* Puxa a imagem exatamente na mesma medida da margem do @page para anular o espaço */
+    bottom: -12mm; 
+    left: -14mm;   
+    /* A largura é o 100% do centro + 14mm da esquerda + 14mm da direita */
+    width: calc(100% + 28mm); 
     display: block; 
     z-index: 9999;
   }
@@ -91,7 +92,8 @@
     width: 100%;
     height: auto;
     display: block;
-    object-fit: contain; /* Garante que a imagem inteira seja mostrada */
+    /* Isso garante que a imagem se estique para tocar as bordas e mantenha a proporção */
+    object-fit: contain; 
   }
   
   /* ==========================================
