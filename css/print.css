@@ -3,6 +3,20 @@
  * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
  */
 
+/* =================================================================
+   1. REGRA DE TELA (Esconde o rodapé e o relatório no app)
+   Isso evita que o rodapé suba com o teclado do celular!
+   ================================================================= */
+@media screen {
+  .pr-footer, 
+  #print-report {
+    display: none !important;
+  }
+}
+
+/* =================================================================
+   2. REGRAS DE IMPRESSÃO (Aparece apenas na hora de gerar o PDF)
+   ================================================================= */
 @media print {
   /* 1. ZERA A MARGEM FÍSICA: Permite que o rodapé vaze até o limite do papel */
   @page {
@@ -16,7 +30,7 @@
     box-sizing: border-box;
   }
 
-  /* 2. RECUPERA A MARGEM LATERAL: Diminuído para 8mm para a tabela ficar mais larga */
+  /* 2. RECUPERA A MARGEM LATERAL: Diminuído para 6mm para a tabela ficar mais larga */
   html, body, #print-report {
     display: block !important;
     width: 100% !important;
@@ -31,7 +45,7 @@
     font-size: 10pt;
     line-height: 1.35;
     margin: 0 !important;
-    padding: 0 6mm !important; /* ⬅️ MEXA AQUI: Quanto menor o número (ex: 5mm), mais larga a tabela fica */
+    padding: 0 6mm !important; /* Margem lateral do texto */
   }
 
   /* 3. MARGENS TOPO E FUNDO: O cabeçalho e rodapé da tabela empurram o texto */
@@ -40,7 +54,7 @@
   }
   
   #print-report > table > tfoot > tr > td {
-    height: 42mm; /* ⬅️ Margem de segurança acompanhando o novo tamanho do rodapé */
+    height: 42mm; /* Margem de segurança acompanhando o novo tamanho do rodapé */
   }
 
   /* Oculta interface do aplicativo no PDF */
@@ -86,7 +100,7 @@
     bottom: 0;
     left: 0;
     width: 210mm; /* Preenche a largura total do A4 zerado */
-    height: 42mm; /* ⬅️ MEXA AQUI: Tamanho do rodapé mais achatado */
+    height: 42mm; /* Tamanho do rodapé mais achatado */
     display: block; 
     z-index: 9999;
   }
@@ -95,7 +109,7 @@
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: fill; /* ⬅️ Força a imagem a achatar sem cortar as bordas */
+    object-fit: fill; /* Força a imagem a achatar sem cortar as bordas */
   }
 
   /* ==========================================
