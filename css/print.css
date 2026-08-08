@@ -79,20 +79,10 @@
      ========================================== */
   .pr-footer {
     position: fixed;
-
-    /* 1️⃣ PARA SUBIR O RODAPÉ NA FOLHA:
-       Mude o -60mm. Quanto mais PRÓXIMO DE ZERO (ex: -55mm, -50mm), 
-       mais o rodapé vai SUBIR na folha. */
-    bottom: -10mm; /* ⬅️ MEXA AQUI PARA SUBIR/DESCER */
-
-    left: -14mm;   
-    width: calc(100% + 28mm); 
-    
-    /* 2️⃣ PARA REDUZIR O TAMANHO DA IMAGEM:
-       Mude o 40mm. Quanto MENOR o número (ex: 35mm, 30mm),
-       menor a imagem vai ficar. */
-    height: 40mm;  /* ⬅️ MEXA AQUI PARA MUDAR O TAMANHO */
-
+    bottom: -15mm;   /* Anula a margem inferior da página */
+    left: -14mm;     /* Anula a margem esquerda para encostar na borda */
+    width: 210mm;    /* Força a largura exata da folha A4 física */
+    height: 51mm;    /* Altura proporcional da imagem original para não achatar */
     display: block; 
     z-index: 9999;
     transform: translateZ(0); 
@@ -102,10 +92,9 @@
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: cover; 
+    object-fit: contain; /* Fundamental: Mostra a imagem inteira sem cortar bordas */
     object-position: bottom;
   }
-
   /* ==========================================
      3. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
      ========================================== */
