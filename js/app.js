@@ -1,6 +1,6 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router, E-mail e Correção de PDF
+ * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router, E-mail, Correção de Imagens e html2pdf (iOS)
  */
 // ==========================================
 // VARIÁVEIS GLOBAIS DE CONTROLE
@@ -14,7 +14,7 @@ let emissionLog = [];
 
 // ==========================================
 // 🔥 PRÉ-CARREGAMENTO DE IMAGENS DO PDF 🔥
-// Garante que as imagens já estejam no cache antes do usuário tentar imprimir
+// Garante que as imagens já estejam no cache
 // ==========================================
 const preloadRodape = new Image();
 preloadRodape.src = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
@@ -65,7 +65,6 @@ function handleRoute() {
   switch (rota) {
     case '#lista':
       if(screenList) screenList.style.display = 'block';
-      // Chama a função globalmente
       if(typeof window.loadList === 'function') window.loadList(); 
       break;
 
@@ -128,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // CARREGAR LISTA (Agora atrelada ao window para o Router enxergar)
+  // CARREGAR LISTA
   window.loadList = async function() {
     if(!listContainer) return;
     listContainer.innerHTML = '<div class="list-loading">Carregando inspeções…</div>';
@@ -354,14 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================
-  // BOTÃO GERAR PDF (Bloqueio de Imagens Atualizado)
+  // BOTÃO GERAR PDF (iOS + PC com html2pdf)
   // =========================================================
   const btnPdf = document.getElementById('btn-pdf');
   if(btnPdf) {
     btnPdf.addEventListener('click', async () => {
       try {
         const originalText = btnPdf.textContent;
-        btnPdf.textContent = '⏳ Baixando Imagens...';
+        btnPdf.textContent = '⏳ Gerando PDF...';
         btnPdf.disabled = true;
 
         if (!currentSeq && typeof StorageService !== 'undefined') {
@@ -375,31 +374,42 @@ document.addEventListener('DOMContentLoaded', () => {
           UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
         }
         
-        // Bloqueia até todas as imagens aparecerem no HTML
         const reportDiv = document.getElementById('print-report');
         const images = Array.from(reportDiv.querySelectorAll('img'));
         let loaded = 0;
 
-        const checkDone = () => {
-          loaded++;
-          if (loaded >= images.length) {
-            setTimeout(() => {
-              window.print();
-              btnPdf.textContent = originalText;
-              btnPdf.disabled = false;
-            }, 150);
+        const generatePDF = async () => {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          const opt = {
+            margin:       0,
+            filename:     `Laudo_${state.text?.placa || 'Inspecao'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+
+          try {
+            await html2pdf().set(opt).from(reportDiv).save();
+          } catch(e) {
+            console.error(e);
+            alert("Erro ao processar PDF: " + e.message);
           }
+
+          btnPdf.textContent = originalText;
+          btnPdf.disabled = false;
         };
 
         if (images.length === 0) {
-          checkDone();
+          generatePDF();
         } else {
           images.forEach(img => {
             if (img.complete) {
-              checkDone();
+              loaded++;
+              if (loaded === images.length) generatePDF();
             } else {
-              img.onload = checkDone;
-              img.onerror = checkDone; 
+              img.onload = () => { loaded++; if (loaded === images.length) generatePDF(); };
+              img.onerror = () => { loaded++; if (loaded === images.length) generatePDF(); };
             }
           });
         }
@@ -423,40 +433,57 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
-  // BOTÃO RECIBO (Bloqueio de Imagens Atualizado)
+  // BOTÃO RECIBO (iOS + PC com html2pdf)
   // =========================================================
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
-    btnReceipt.addEventListener('click', () => {
+    btnReceipt.addEventListener('click', async () => {
       const originalText = btnReceipt.textContent;
-      btnReceipt.textContent = '⏳ Baixando Imagens...';
+      btnReceipt.textContent = '⏳ Gerando Recibo...';
       btnReceipt.disabled = true;
 
       const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
       const cnpj = document.getElementById('cnpj')?.value || '00.000.000/0000-00';
+      
       if(typeof UIRender !== 'undefined') UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
       
       const reportDiv = document.getElementById('print-report');
       const images = Array.from(reportDiv.querySelectorAll('img'));
       let loaded = 0;
 
-      const checkDone = () => {
-        loaded++;
-        if (loaded >= images.length) {
-          setTimeout(() => {
-            window.print();
-            btnReceipt.textContent = originalText;
-            btnReceipt.disabled = false;
-          }, 150);
+      const generateReceiptPDF = async () => {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const opt = {
+          margin:       0,
+          filename:     `Recibo_${currentSeq ? currentSeq.number : 'Novo'}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        try {
+          await html2pdf().set(opt).from(reportDiv).save();
+        } catch(e) {
+          console.error(e);
+          alert("Erro ao processar Recibo: " + e.message);
         }
+
+        btnReceipt.textContent = originalText;
+        btnReceipt.disabled = false;
       };
 
       if (images.length === 0) {
-        checkDone();
+        generateReceiptPDF();
       } else {
         images.forEach(img => {
-          if (img.complete) checkDone();
-          else { img.onload = checkDone; img.onerror = checkDone; }
+          if (img.complete) {
+            loaded++;
+            if (loaded === images.length) generateReceiptPDF();
+          } else {
+            img.onload = () => { loaded++; if (loaded === images.length) generateReceiptPDF(); };
+            img.onerror = () => { loaded++; if (loaded === images.length) generateReceiptPDF(); };
+          }
         });
       }
     });
