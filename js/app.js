@@ -1,6 +1,6 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Final Consolidada com Router, E-mail, Correção de Imagens e html2pdf (iOS)
+ * Arquivo Principal (Orquestrador) - Versão Final Consolidada com html2pdf (Correção de Tela Branca)
  */
 // ==========================================
 // VARIÁVEIS GLOBAIS DE CONTROLE
@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================
-  // BOTÃO GERAR PDF (iOS + PC com html2pdf)
+  // BOTÃO GERAR PDF (iOS + PC com html2pdf - CORRIGIDO)
   // =========================================================
   const btnPdf = document.getElementById('btn-pdf');
   if(btnPdf) {
@@ -379,13 +379,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let loaded = 0;
 
         const generatePDF = async () => {
+          // 🔥 MÁGICA AQUI: Força o relatório e o rodapé a aparecerem para a biblioteca conseguir "tirar a foto"
+          reportDiv.style.setProperty('display', 'block', 'important');
+          reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.setProperty('display', 'block', 'important'));
+          
           await new Promise(resolve => setTimeout(resolve, 300));
           
           const opt = {
             margin:       0,
             filename:     `Laudo_${state.text?.placa || 'Inspecao'}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024 },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
           };
 
@@ -395,6 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(e);
             alert("Erro ao processar PDF: " + e.message);
           }
+
+          // 🔥 ESCONDE O RELATÓRIO NOVAMENTE PARA NÃO QUEBRAR O APP 🔥
+          reportDiv.style.setProperty('display', 'none', 'important');
+          reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.removeProperty('display'));
 
           btnPdf.textContent = originalText;
           btnPdf.disabled = false;
@@ -433,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
-  // BOTÃO RECIBO (iOS + PC com html2pdf)
+  // BOTÃO RECIBO (iOS + PC com html2pdf - CORRIGIDO)
   // =========================================================
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
@@ -452,13 +460,17 @@ document.addEventListener('DOMContentLoaded', () => {
       let loaded = 0;
 
       const generateReceiptPDF = async () => {
+        // 🔥 MÁGICA AQUI: Desbloqueia o display para o recibo também
+        reportDiv.style.setProperty('display', 'block', 'important');
+        reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.setProperty('display', 'block', 'important'));
+
         await new Promise(resolve => setTimeout(resolve, 300));
         
         const opt = {
           margin:       0,
           filename:     `Recibo_${currentSeq ? currentSeq.number : 'Novo'}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+          html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024 },
           jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
@@ -468,6 +480,10 @@ document.addEventListener('DOMContentLoaded', () => {
           console.error(e);
           alert("Erro ao processar Recibo: " + e.message);
         }
+
+        // 🔥 ESCONDE APÓS GERAR O RECIBO
+        reportDiv.style.setProperty('display', 'none', 'important');
+        reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.removeProperty('display'));
 
         btnReceipt.textContent = originalText;
         btnReceipt.disabled = false;
