@@ -1,6 +1,6 @@
 /**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Nativa Restaurada (Layout Perfeito)
+ * Arquivo Principal (Orquestrador) - Versão Final Consolidada com html2pdf (Correção de Tela Branca)
  */
 // ==========================================
 // VARIÁVEIS GLOBAIS DE CONTROLE
@@ -314,8 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('cnt-pend')) document.getElementById('cnt-pend').textContent = (document.querySelectorAll('.opts').length - c - nc - na);
   }
 
-  // Função para coletar estado sincronamente (Para enganar o bloqueio do Safari)
-  function collectStateSync() {
+  // SALVAR E PDF
+  async function collectState() {
     const state = { 
       text: {}, radios: {}, status: document.getElementById('status-select')?.value || 'rascunho', 
       photoUrls: { ...photoUrls }, seq: currentSeq, emissionLog: emissionLog 
@@ -327,21 +327,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[type=radio]:checked').forEach(r => { 
       state.radios[r.name] = r.value; 
     });
-
-    const getCanvasSig = (id) => {
-      const canvas = document.getElementById(id);
-      if (!canvas) return null;
-      const blank = document.createElement('canvas');
-      blank.width = canvas.width; blank.height = canvas.height;
-      if (canvas.toDataURL() === blank.toDataURL()) return null;
-      return { methodUsed: 'canvas', image: canvas.toDataURL('image/png') };
-    };
-
-    state.signatures = {
-      methodUsed: 'canvas',
-      respIns: getCanvasSig('sig-respIns'),
-      repCli: getCanvasSig('sig-repCli')
-    };
+    
+    if (typeof signatureManager !== 'undefined') {
+      state.signatures = {
+        methodUsed: signatureManager.currentMethod,
+        respIns: await signatureManager.collectSignature('respIns'),
+        repCli: await signatureManager.collectSignature('repCli')
+      };
+    }
     return state;
   }
 
@@ -360,28 +353,79 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================
-  // BOTÃO GERAR PDF (Acesso Imediato - Fura o Bloqueio do Safari)
+  // BOTÃO GERAR PDF (iOS + PC com html2pdf - CORRIGIDO)
   // =========================================================
   const btnPdf = document.getElementById('btn-pdf');
   if(btnPdf) {
-    btnPdf.addEventListener('click', () => {
-      // 1. Gera o estado imediatamente (Sem usar await)
-      const state = collectStateSync();
-      
-      // 2. Monta o relatório na tela oculto instantaneamente
-      if(typeof UIRender !== 'undefined') {
-        UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
-      }
-      
-      // 3. Dispara a impressão NO MESMO MILISSEGUNDO! (O Safari vai permitir)
-      window.print();
+    btnPdf.addEventListener('click', async () => {
+      try {
+        const originalText = btnPdf.textContent;
+        btnPdf.textContent = '⏳ Gerando PDF...';
+        btnPdf.disabled = true;
 
-      // 4. Salva no banco em background silenciosamente depois que a tela já abriu
-      if (typeof StorageService !== 'undefined') {
-        StorageService.saveInspection(currentRecordId, state).then(id => {
-          currentRecordId = id;
-          window.history.replaceState(null, null, `#form?id=${currentRecordId}`);
-        }).catch(e => console.error("Erro ao salvar background", e));
+        if (!currentSeq && typeof StorageService !== 'undefined') {
+          currentSeq = { number: await StorageService.getNextSeqNumber(new Date().getFullYear()), year: new Date().getFullYear() };
+        }
+        const state = await collectState();
+        currentRecordId = await StorageService.saveInspection(currentRecordId, state);
+        window.history.replaceState(null, null, `#form?id=${currentRecordId}`);
+        
+        if(typeof UIRender !== 'undefined') {
+          UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
+        }
+        
+        const reportDiv = document.getElementById('print-report');
+        const images = Array.from(reportDiv.querySelectorAll('img'));
+        let loaded = 0;
+
+        const generatePDF = async () => {
+          // 🔥 MÁGICA AQUI: Força o relatório e o rodapé a aparecerem para a biblioteca conseguir "tirar a foto"
+          reportDiv.style.setProperty('display', 'block', 'important');
+          reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.setProperty('display', 'block', 'important'));
+          
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          const opt = {
+            margin:       0,
+            filename:     `Laudo_${state.text?.placa || 'Inspecao'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+
+          try {
+            await html2pdf().set(opt).from(reportDiv).save();
+          } catch(e) {
+            console.error(e);
+            alert("Erro ao processar PDF: " + e.message);
+          }
+
+          // 🔥 ESCONDE O RELATÓRIO NOVAMENTE PARA NÃO QUEBRAR O APP 🔥
+          reportDiv.style.setProperty('display', 'none', 'important');
+          reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.removeProperty('display'));
+
+          btnPdf.textContent = originalText;
+          btnPdf.disabled = false;
+        };
+
+        if (images.length === 0) {
+          generatePDF();
+        } else {
+          images.forEach(img => {
+            if (img.complete) {
+              loaded++;
+              if (loaded === images.length) generatePDF();
+            } else {
+              img.onload = () => { loaded++; if (loaded === images.length) generatePDF(); };
+              img.onerror = () => { loaded++; if (loaded === images.length) generatePDF(); };
+            }
+          });
+        }
+
+      } catch (err) {
+        alert("Erro: " + err.message);
+        btnPdf.textContent = 'Gerar PDF';
+        btnPdf.disabled = false;
       }
     });
   }
@@ -397,18 +441,67 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
-  // BOTÃO RECIBO (Acesso Imediato - Fura o Bloqueio do Safari)
+  // BOTÃO RECIBO (iOS + PC com html2pdf - CORRIGIDO)
   // =========================================================
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
-    btnReceipt.addEventListener('click', () => {
+    btnReceipt.addEventListener('click', async () => {
+      const originalText = btnReceipt.textContent;
+      btnReceipt.textContent = '⏳ Gerando Recibo...';
+      btnReceipt.disabled = true;
+
       const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
       const cnpj = document.getElementById('cnpj')?.value || '00.000.000/0000-00';
       
       if(typeof UIRender !== 'undefined') UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
       
-      // Dispara IMEDIATAMENTE também
-      window.print();
+      const reportDiv = document.getElementById('print-report');
+      const images = Array.from(reportDiv.querySelectorAll('img'));
+      let loaded = 0;
+
+      const generateReceiptPDF = async () => {
+        // 🔥 MÁGICA AQUI: Desbloqueia o display para o recibo também
+        reportDiv.style.setProperty('display', 'block', 'important');
+        reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.setProperty('display', 'block', 'important'));
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const opt = {
+          margin:       0,
+          filename:     `Recibo_${currentSeq ? currentSeq.number : 'Novo'}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024 },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        try {
+          await html2pdf().set(opt).from(reportDiv).save();
+        } catch(e) {
+          console.error(e);
+          alert("Erro ao processar Recibo: " + e.message);
+        }
+
+        // 🔥 ESCONDE APÓS GERAR O RECIBO
+        reportDiv.style.setProperty('display', 'none', 'important');
+        reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.removeProperty('display'));
+
+        btnReceipt.textContent = originalText;
+        btnReceipt.disabled = false;
+      };
+
+      if (images.length === 0) {
+        generateReceiptPDF();
+      } else {
+        images.forEach(img => {
+          if (img.complete) {
+            loaded++;
+            if (loaded === images.length) generateReceiptPDF();
+          } else {
+            img.onload = () => { loaded++; if (loaded === images.length) generateReceiptPDF(); };
+            img.onerror = () => { loaded++; if (loaded === images.length) generateReceiptPDF(); };
+          }
+        });
+      }
     });
   }
 
