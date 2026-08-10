@@ -1,6 +1,6 @@
 /**
  * js/render.js
- * Gerenciador de Renderização da Interface e do PDF (Compatibilidade Total iOS)
+ * Gerenciador de Renderização da Interface e do PDF (Completo com Seção 13)
  */
 
 const UIRender = {
@@ -114,7 +114,7 @@ const UIRender = {
         `;
         sheet.appendChild(body);
         container.appendChild(sheet);
-        return; 
+        return; // Sai do forEach para não tentar renderizar como itens normais
       }
 
       if (Array.isArray(sec.items)) {
@@ -157,7 +157,7 @@ const UIRender = {
 
   /**
    * =================================================================
-   * 2. MOTOR DE IMPRESSÃO (ESTRUTURA LINHA - COMPATÍVEL COM IOS)
+   * 2. MOTOR DE IMPRESSÃO (BLOCO ÚNICO - ANTI-CORTE)
    * =================================================================
    */
   fmtDateBR: (iso) => {
@@ -174,10 +174,9 @@ const UIRender = {
 
   prFooterHTML: () => {
     const rodapeUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
-    // Estilos inline blindados para não depender exclusivamente do print.css e forçar o Safari a obedecer
     return `
-    <div class="pr-footer-inline" style="width: 100%; height: 38mm; margin-top: 30px; display: block; page-break-inside: avoid; break-inside: avoid;">
-      <img src="${rodapeUrl}" alt="Rodapé ERCR" style="width: 100%; height: 100%; display: block; object-fit: fill;">
+    <div class="pr-footer">
+      <img src="${rodapeUrl}" alt="Rodapé ERCR">
     </div>`;
   },
 
@@ -221,9 +220,17 @@ const UIRender = {
     // 🔥 LOGO OFICIAL DEFINIDA AQUI 🔥
     const logoOficialUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    // 🔥 NOVO FORMATO SEM TABELA FANTASMA 🔥
+    // 🔥 NOVO FORMATO DE ESTRUTURA PARA IMPRESSÃO PERFEITA 🔥
     let html = `
-      <div class="pr-page" style="width: 100%;">
+      <table style="width: 100%; border: none; border-collapse: collapse;">
+        <thead>
+          <tr><td style="border: none; padding: 0;">
+             <!-- O cabeçalho da tabela repete no topo de todas as páginas se houver espaço reservado -->
+          </td></tr>
+        </thead>
+        <tbody>
+          <tr><td style="border: none; padding: 0;">
+            <div style="width: 100%;">
     `;
 
     // 🔥 TOPO DO LAUDO COM A LOGO INJETADA 🔥
@@ -280,7 +287,7 @@ const UIRender = {
                <div><strong>1.12 Implemento/Carroceria:</strong> ${esc(v('implemento'))}</div>
              </div>`;
 
-    // Desenha as seções de 2 a 12
+    // Desenha as seções de 2 a 12 (Pula a 13 para tratar separadamente)
     if (Array.isArray(sectionsArray)) {
       sectionsArray.forEach(sec => {
         if (sec.n >= 2 && sec.n <= 12) {
@@ -359,7 +366,7 @@ const UIRender = {
                ` : ''}`;
     }
 
-    // CONTINUA O FLUXO DIRETO PARA A SEÇÃO 14
+    // CONTINUA O FLUXO DIRETO PARA A SEÇÃO 14 (Sem quebrar a DIV principal)
     html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
     
     let hasNC = false;
@@ -411,6 +418,7 @@ const UIRender = {
 
     // === CAPTURA DE ASSINATURAS EM TEMPO REAL DO CANVAS ===
     
+    // Verifica e captura a assinatura do Inspetor
     const canvasInspetor = document.getElementById('sig-respIns');
     let imgInspetorBase64 = null;
     if (canvasInspetor) {
@@ -426,6 +434,7 @@ const UIRender = {
       }
     }
 
+    // Verifica e captura a assinatura do Cliente
     const canvasCliente = document.getElementById('sig-repCli');
     let imgClienteBase64 = null;
     if (canvasCliente) {
@@ -463,9 +472,22 @@ const UIRender = {
                </div>
              </div>`;
     
-    // 🔥 FECHAMENTO DA DIV E INJEÇÃO DO RODAPÉ EM LINHA 🔥
-    html += `</div>`; // Fecha a div class="pr-page"
-    html += UIRender.prFooterHTML(); // Adiciona o rodapé no final da estrutura
+    // 🔥 FECHAMENTO DA ESTRUTURA DE TABELA 🔥
+    html += `
+            </div> <!-- Fecha a div interna -->
+          </td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td style="border: none; padding: 0;">
+            <!-- O tfoot empurra o rodapé para baixo e impede que o texto invada a área da imagem -->
+            <div style="height: 55mm;"></div> 
+          </td></tr>
+        </tfoot>
+      </table>
+    `;
+
+    // Injeta a imagem do rodapé que agora ficará fixada no espaço reservado pelo tfoot
+    html += UIRender.prFooterHTML();
 
     container.innerHTML = html;
   },
@@ -484,9 +506,7 @@ const UIRender = {
     const nf = v('nfNumero');
     const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    // 🔥 EMBALA O RECIBO TAMBÉM NO FORMATO COMPATÍVEL 🔥
-    let html = '<div class="pr-page" style="width: 100%;">';
-    
+    let html = '<div style="width: 100%;">';
     html += `<div style="text-align: center; margin-bottom: 25px; margin-top: 10px;">
                <img src="${logoUrl}" style="max-width: 220px; height: auto;" alt="ERCR Engenharia">
              </div>`;
@@ -507,9 +527,9 @@ const UIRender = {
     </div>`;
 
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
-    
-    html += `</div>`; // Fecha div pr-page
-    html += UIRender.prFooterHTML(); // Adiciona o rodapé no final
+    html += `</div>`;
+
+    html += UIRender.prFooterHTML();
 
     const container = document.getElementById('print-report');
     if (container) container.innerHTML = html;
