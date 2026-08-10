@@ -1,4 +1,4 @@
-}/**
+/**
  * js/app.js
  * Arquivo Principal (Orquestrador) - Com Pré-visualização Nativa Restaurada
  */
