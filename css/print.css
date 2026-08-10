@@ -1,6 +1,7 @@
 /**
  * css/print.css
  * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
+ * VERSÃO ORIGINAL: Repete em todas as páginas com margem de segurança de 42mm
  */
 
 /* =================================================================
@@ -69,6 +70,7 @@
     display: none !important;
   }
 
+  /* Marca d'água atualizada com o ícone */
   body::before {
     content: "";
     position: fixed; 
@@ -76,7 +78,8 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png') !important;    background-size: 60%;
+    background-image: url('https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr-icone.png') !important;
+    background-size: 60%;
     background-repeat: no-repeat;
     background-position: center;
     opacity: 0.04; 
@@ -99,7 +102,7 @@
     bottom: 0;
     left: 0;
     width: 210mm; /* Preenche a largura total do A4 zerado */
-    height: 42mm; /* Tamanho do rodapé mais achatado */
+    height: 42mm; /* Tamanho do rodapé mais achatado que você ajustou */
     display: block; 
     z-index: 9999;
   }
