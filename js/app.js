@@ -314,8 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('cnt-pend')) document.getElementById('cnt-pend').textContent = (document.querySelectorAll('.opts').length - c - nc - na);
   }
 
-  // SALVAR E PDF
-  async function collectState() {
+  // Função para coletar estado sincronamente (Para enganar o bloqueio do Safari)
+  function collectStateSync() {
     const state = { 
       text: {}, radios: {}, status: document.getElementById('status-select')?.value || 'rascunho', 
       photoUrls: { ...photoUrls }, seq: currentSeq, emissionLog: emissionLog 
@@ -327,14 +327,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[type=radio]:checked').forEach(r => { 
       state.radios[r.name] = r.value; 
     });
-    
-    if (typeof signatureManager !== 'undefined') {
-      state.signatures = {
-        methodUsed: signatureManager.currentMethod,
-        respIns: await signatureManager.collectSignature('respIns'),
-        repCli: await signatureManager.collectSignature('repCli')
-      };
-    }
+
+    const getCanvasSig = (id) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const blank = document.createElement('canvas');
+      blank.width = canvas.width; blank.height = canvas.height;
+      if (canvas.toDataURL() === blank.toDataURL()) return null;
+      return { methodUsed: 'canvas', image: canvas.toDataURL('image/png') };
+    };
+
+    state.signatures = {
+      methodUsed: 'canvas',
+      respIns: getCanvasSig('sig-respIns'),
+      repCli: getCanvasSig('sig-repCli')
+    };
     return state;
   }
 
@@ -353,60 +360,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================
-  // BOTÃO GERAR PDF (Nativo Perfeito com Trava de Imagens)
+  // BOTÃO GERAR PDF (Acesso Imediato - Fura o Bloqueio do Safari)
   // =========================================================
   const btnPdf = document.getElementById('btn-pdf');
   if(btnPdf) {
-    btnPdf.addEventListener('click', async () => {
-      try {
-        const originalText = btnPdf.textContent;
-        btnPdf.textContent = '⏳ Baixando Imagens...';
-        btnPdf.disabled = true;
+    btnPdf.addEventListener('click', () => {
+      // 1. Gera o estado imediatamente (Sem usar await)
+      const state = collectStateSync();
+      
+      // 2. Monta o relatório na tela oculto instantaneamente
+      if(typeof UIRender !== 'undefined') {
+        UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
+      }
+      
+      // 3. Dispara a impressão NO MESMO MILISSEGUNDO! (O Safari vai permitir)
+      window.print();
 
-        if (!currentSeq && typeof StorageService !== 'undefined') {
-          currentSeq = { number: await StorageService.getNextSeqNumber(new Date().getFullYear()), year: new Date().getFullYear() };
-        }
-        const state = await collectState();
-        currentRecordId = await StorageService.saveInspection(currentRecordId, state);
-        window.history.replaceState(null, null, `#form?id=${currentRecordId}`);
-        
-        if(typeof UIRender !== 'undefined') {
-          UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
-        }
-        
-        // Vasculha o relatório buscando imagens e aguarda o download de TODAS antes de imprimir
-        const reportDiv = document.getElementById('print-report');
-        const images = Array.from(reportDiv.querySelectorAll('img'));
-        let loaded = 0;
-
-        const checkDone = () => {
-          loaded++;
-          if (loaded >= images.length) {
-            setTimeout(() => {
-              window.print();
-              btnPdf.textContent = originalText;
-              btnPdf.disabled = false;
-            }, 300); // Atraso minúsculo para garantir a injeção do CSS nativo no iOS
-          }
-        };
-
-        if (images.length === 0) {
-          checkDone();
-        } else {
-          images.forEach(img => {
-            if (img.complete) {
-              checkDone();
-            } else {
-              img.onload = checkDone;
-              img.onerror = checkDone; 
-            }
-          });
-        }
-
-      } catch (err) {
-        alert("Erro: " + err.message);
-        btnPdf.textContent = 'Gerar PDF';
-        btnPdf.disabled = false;
+      // 4. Salva no banco em background silenciosamente depois que a tela já abriu
+      if (typeof StorageService !== 'undefined') {
+        StorageService.saveInspection(currentRecordId, state).then(id => {
+          currentRecordId = id;
+          window.history.replaceState(null, null, `#form?id=${currentRecordId}`);
+        }).catch(e => console.error("Erro ao salvar background", e));
       }
     });
   }
@@ -422,42 +397,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
-  // BOTÃO RECIBO (Nativo Perfeito com Trava de Imagens)
+  // BOTÃO RECIBO (Acesso Imediato - Fura o Bloqueio do Safari)
   // =========================================================
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
     btnReceipt.addEventListener('click', () => {
-      const originalText = btnReceipt.textContent;
-      btnReceipt.textContent = '⏳ Baixando Imagens...';
-      btnReceipt.disabled = true;
-
       const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
       const cnpj = document.getElementById('cnpj')?.value || '00.000.000/0000-00';
+      
       if(typeof UIRender !== 'undefined') UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
       
-      const reportDiv = document.getElementById('print-report');
-      const images = Array.from(reportDiv.querySelectorAll('img'));
-      let loaded = 0;
-
-      const checkDone = () => {
-        loaded++;
-        if (loaded >= images.length) {
-          setTimeout(() => {
-            window.print();
-            btnReceipt.textContent = originalText;
-            btnReceipt.disabled = false;
-          }, 300);
-        }
-      };
-
-      if (images.length === 0) {
-        checkDone();
-      } else {
-        images.forEach(img => {
-          if (img.complete) checkDone();
-          else { img.onload = checkDone; img.onerror = checkDone; }
-        });
-      }
+      // Dispara IMEDIATAMENTE também
+      window.print();
     });
   }
 
