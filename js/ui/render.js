@@ -114,7 +114,7 @@ const UIRender = {
         `;
         sheet.appendChild(body);
         container.appendChild(sheet);
-        return; // Sai do forEach para não tentar renderizar como itens normais
+        return; 
       }
 
       if (Array.isArray(sec.items)) {
@@ -174,10 +174,10 @@ const UIRender = {
 
   prFooterHTML: () => {
     const rodapeUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
-    // Alterado para 'pr-footer-inline'
+    // Estilos inline blindados para não depender exclusivamente do print.css e forçar o Safari a obedecer
     return `
-    <div class="pr-footer-inline">
-      <img src="${rodapeUrl}" alt="Rodapé ERCR">
+    <div class="pr-footer-inline" style="width: 100%; height: 38mm; margin-top: 30px; display: block; page-break-inside: avoid; break-inside: avoid;">
+      <img src="${rodapeUrl}" alt="Rodapé ERCR" style="width: 100%; height: 100%; display: block; object-fit: fill;">
     </div>`;
   },
 
