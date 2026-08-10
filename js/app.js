@@ -1,6 +1,6 @@
-/**
+}/**
  * js/app.js
- * Arquivo Principal (Orquestrador) - Versão Final Consolidada com html2pdf (Correção de Tela Branca)
+ * Arquivo Principal (Orquestrador) - Com Pré-visualização Nativa Restaurada
  */
 // ==========================================
 // VARIÁVEIS GLOBAIS DE CONTROLE
@@ -353,14 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================
-  // BOTÃO GERAR PDF (iOS + PC com html2pdf - CORRIGIDO)
+  // BOTÃO GERAR PDF (Com Pré-Visualização Nativa Restaurada)
   // =========================================================
   const btnPdf = document.getElementById('btn-pdf');
   if(btnPdf) {
     btnPdf.addEventListener('click', async () => {
       try {
         const originalText = btnPdf.textContent;
-        btnPdf.textContent = '⏳ Gerando PDF...';
+        btnPdf.textContent = '⏳ Preparando Visualização...';
         btnPdf.disabled = true;
 
         if (!currentSeq && typeof StorageService !== 'undefined') {
@@ -374,50 +374,31 @@ document.addEventListener('DOMContentLoaded', () => {
           UIRender.buildPrintReport(SECTIONS, state.signatures, currentSeq, "", "55.141.422/0001-79");
         }
         
+        // Vasculha o relatório buscando imagens e aguarda o download antes de abrir a pré-visualização
         const reportDiv = document.getElementById('print-report');
         const images = Array.from(reportDiv.querySelectorAll('img'));
         let loaded = 0;
 
-        const generatePDF = async () => {
-          // 🔥 MÁGICA AQUI: Força o relatório e o rodapé a aparecerem para a biblioteca conseguir "tirar a foto"
-          reportDiv.style.setProperty('display', 'block', 'important');
-          reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.setProperty('display', 'block', 'important'));
-          
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          const opt = {
-            margin:       0,
-            filename:     `Laudo_${state.text?.placa || 'Inspecao'}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          };
-
-          try {
-            await html2pdf().set(opt).from(reportDiv).save();
-          } catch(e) {
-            console.error(e);
-            alert("Erro ao processar PDF: " + e.message);
+        const openPreview = () => {
+          loaded++;
+          if (loaded >= images.length) {
+            setTimeout(() => {
+              window.print(); // 🔥 ABRE A PRÉ-VISUALIZAÇÃO NATIVA 🔥
+              btnPdf.textContent = originalText;
+              btnPdf.disabled = false;
+            }, 400); // Atraso leve para garantir que o CSS foi aplicado
           }
-
-          // 🔥 ESCONDE O RELATÓRIO NOVAMENTE PARA NÃO QUEBRAR O APP 🔥
-          reportDiv.style.setProperty('display', 'none', 'important');
-          reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.removeProperty('display'));
-
-          btnPdf.textContent = originalText;
-          btnPdf.disabled = false;
         };
 
         if (images.length === 0) {
-          generatePDF();
+          openPreview();
         } else {
           images.forEach(img => {
             if (img.complete) {
-              loaded++;
-              if (loaded === images.length) generatePDF();
+              openPreview();
             } else {
-              img.onload = () => { loaded++; if (loaded === images.length) generatePDF(); };
-              img.onerror = () => { loaded++; if (loaded === images.length) generatePDF(); };
+              img.onload = openPreview;
+              img.onerror = openPreview; 
             }
           });
         }
@@ -441,65 +422,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================
-  // BOTÃO RECIBO (iOS + PC com html2pdf - CORRIGIDO)
+  // BOTÃO RECIBO (Com Pré-Visualização Nativa Restaurada)
   // =========================================================
   const btnReceipt = document.getElementById('btn-receipt');
   if (btnReceipt) {
-    btnReceipt.addEventListener('click', async () => {
+    btnReceipt.addEventListener('click', () => {
       const originalText = btnReceipt.textContent;
-      btnReceipt.textContent = '⏳ Gerando Recibo...';
+      btnReceipt.textContent = '⏳ Preparando Visualização...';
       btnReceipt.disabled = true;
 
       const logoUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
       const cnpj = document.getElementById('cnpj')?.value || '00.000.000/0000-00';
-      
       if(typeof UIRender !== 'undefined') UIRender.buildReceiptReport(currentSeq, logoUrl, cnpj);
       
       const reportDiv = document.getElementById('print-report');
       const images = Array.from(reportDiv.querySelectorAll('img'));
       let loaded = 0;
 
-      const generateReceiptPDF = async () => {
-        // 🔥 MÁGICA AQUI: Desbloqueia o display para o recibo também
-        reportDiv.style.setProperty('display', 'block', 'important');
-        reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.setProperty('display', 'block', 'important'));
-
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        const opt = {
-          margin:       0,
-          filename:     `Recibo_${currentSeq ? currentSeq.number : 'Novo'}.pdf`,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1024 },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        try {
-          await html2pdf().set(opt).from(reportDiv).save();
-        } catch(e) {
-          console.error(e);
-          alert("Erro ao processar Recibo: " + e.message);
+      const openPreview = () => {
+        loaded++;
+        if (loaded >= images.length) {
+          setTimeout(() => {
+            window.print(); // 🔥 ABRE A PRÉ-VISUALIZAÇÃO NATIVA 🔥
+            btnReceipt.textContent = originalText;
+            btnReceipt.disabled = false;
+          }, 400);
         }
-
-        // 🔥 ESCONDE APÓS GERAR O RECIBO
-        reportDiv.style.setProperty('display', 'none', 'important');
-        reportDiv.querySelectorAll('.pr-footer').forEach(f => f.style.removeProperty('display'));
-
-        btnReceipt.textContent = originalText;
-        btnReceipt.disabled = false;
       };
 
       if (images.length === 0) {
-        generateReceiptPDF();
+        openPreview();
       } else {
         images.forEach(img => {
-          if (img.complete) {
-            loaded++;
-            if (loaded === images.length) generateReceiptPDF();
-          } else {
-            img.onload = () => { loaded++; if (loaded === images.length) generateReceiptPDF(); };
-            img.onerror = () => { loaded++; if (loaded === images.length) generateReceiptPDF(); };
-          }
+          if (img.complete) openPreview();
+          else { img.onload = openPreview; img.onerror = openPreview; }
         });
       }
     });
