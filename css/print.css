@@ -1,19 +1,21 @@
 /**
  * css/print.css
- * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
+ * Estilos otimizados para Impressão - Compatibilidade Total (iOS e PC)
  */
 
 @media screen {
-  .pr-footer, 
+  /* Esconde o relatório e o rodapé de impressão na tela do aplicativo */
+  .pr-footer-inline, 
   #print-report {
     display: none !important;
   }
 }
 
 @media print {
+  /* Margem zerada nas laterais e embaixo, apenas uma pequena folga no topo */
   @page {
     size: 210mm 297mm;
-    margin: 0mm !important; 
+    margin: 10mm 0mm 0mm 0mm !important; 
   }
 
   * {
@@ -22,30 +24,39 @@
     box-sizing: border-box;
   }
 
-  html, body, #print-report {
-    display: block !important;
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  /* Transforma o container geral em Flexbox para empurrar o rodapé */
+  #print-report {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    position: static !important;
-    background: transparent !important;
     color: #1a1a1a !important;
     font-family: 'IBM Plex Sans', Arial, sans-serif;
     font-size: 10pt;
     line-height: 1.35;
-    margin: 0 !important;
-    padding: 0 6mm !important; 
+    background: transparent !important;
   }
 
-  #print-report > table > thead > tr > td { height: 12mm; }
-  #print-report > table > tfoot > tr > td { height: 42mm; }
-
+  /* Oculta interface do app */
   header.dash, .actions, #screen-lock, #screen-list, #screen-form, .dash-controls, #fipe-loading, #fipe-error {
     display: none !important;
   }
 
+  /* Container do conteúdo com margens laterais */
+  .pr-page {
+    flex: 1 0 auto !important; /* Empurra tudo que vier depois (o rodapé) pro fundo */
+    padding: 0 8mm !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Marca d'água no fundo de todas as páginas */
   body::before {
     content: "";
     position: fixed; 
@@ -56,33 +67,40 @@
     background-repeat: no-repeat;
     background-position: center;
     opacity: 0.04; 
-    z-index: -1; 
+    z-index: 0; 
     pointer-events: none;
   }
 
   .pr-top-logo { display: block; margin: 0 auto 15px auto; max-width: 220px; height: auto; }
 
-  .pr-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 210mm; 
-    height: 42mm; 
-    display: block; 
-    z-index: 9999;
+  /* ==========================================
+     NOVO RODAPÉ: Amigável para o iPhone (iOS)
+     ========================================== */
+  .pr-footer-inline {
+    width: 100%;
+    height: 38mm;
+    margin-top: auto !important; /* Mágica do Flexbox: força o rodapé pro fundo da última página */
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
-  .pr-footer img {
+  .pr-footer-inline img {
     width: 100%;
     height: 100%;
     display: block;
     object-fit: fill; 
   }
 
-  .pr-page { display: block !important; position: static !important; }
-  .pr-table tr, .pr-nc-block, .pr-special-row, .pr-photo-block, .pr-field-pair { break-inside: avoid; page-break-inside: avoid; }
+  /* ==========================================
+     QUEBRAS DE PÁGINA (Protegendo Tabelas e Blocos)
+     ========================================== */
+  .pr-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8.5pt; page-break-inside: auto; }
+  .pr-table tr { page-break-inside: avoid; break-inside: avoid; }
+  
+  .pr-nc-block, .pr-special-row, .pr-photo-block, .pr-field-pair { break-inside: avoid; page-break-inside: avoid; }
   .pr-section-title { break-after: avoid; page-break-after: avoid; background-color: #111 !important; color: #fff !important; font-size: 9pt; font-weight: 700; text-transform: uppercase; padding: 5px 10px; margin-top: 14px; margin-bottom: 8px; letter-spacing: 0.6px; border-radius: 2px; }
 
+  /* ===== ESTILOS GERAIS DO LAUDO ===== */
   .pr-header-block { border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; text-align: center; }
   .pr-title { font-size: 14pt; font-weight: 700; text-align: center; text-transform: uppercase; margin: 0 0 3px 0; letter-spacing: 0.6px; color: #000; }
   .pr-seq { text-align: center; font-size: 9.5pt; font-weight: 500; margin: 0 0 10px 0; color: #444; letter-spacing: 0.3px; }
@@ -90,7 +108,7 @@
   .pr-field-line strong, .pr-field-pair strong { font-weight: 600; color: #000; }
   .pr-field-pair { display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 4px; gap: 18px; padding-bottom: 2px; border-bottom: 1px dotted #ddd; }
   .pr-field-pair > div { flex: 1; }
-  .pr-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8.5pt; }
+  
   .pr-table th { background-color: #222 !important; color: #fff !important; font-weight: 700; text-align: left; padding: 4px 8px; border: 1px solid #222; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.3px; }
   .pr-table td { padding: 4px 8px; border: 1px solid #ccc; vertical-align: middle; background-color: transparent !important; }
   .pr-item-cell { width: 65%; }
