@@ -1,17 +1,24 @@
 /**
  * css/print.css
  * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
- * VERSÃO ORIGINAL: Repete em todas as páginas com margem de segurança de 42mm
+ * VERSÃO ATUALIZADA COM CORREÇÕES PARA MOBILE E DESKTOP
  */
 
 /* =================================================================
-   1. REGRA DE TELA (Esconde o rodapé e o relatório no app)
-   Isso evita que o rodapé suba com o teclado do celular!
+   1. REGRA DE TELA (Esconde o relatório de forma inteligente)
+   Substituído display: none por posicionamento fora da tela para
+   evitar bugs de reflow (tela em branco/ter que clicar) no PC.
    ================================================================= */
 @media screen {
   .pr-footer, 
   #print-report {
-    display: none !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 }
 
@@ -105,6 +112,10 @@
     height: 42mm; /* Tamanho do rodapé mais achatado que você ajustou */
     display: block; 
     z-index: 9999;
+    /* Correções adicionadas para forçar o mobile a respeitar o rodapé */
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    transform: translateZ(0); /* Força a renderização por hardware */
   }
 
   .pr-footer img {
