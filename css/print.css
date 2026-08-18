@@ -1,8 +1,14 @@
 /**
  * css/print.css
- * Estilos otimizados para Impressão - FULL BLEED (Rodapé Moderno Ponta a Ponta)
+ * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
+ * VERSÃO CORRIGIDA - Rodapé via TFOOT (compatível com mobile)
  */
 
+/* =================================================================
+   1. REGRA DE TELA (Esconde o relatório de forma inteligente)
+   Substituído display: none por posicionamento fora da tela para
+   evitar bugs de reflow (tela em branco/ter que clicar) no PC.
+   ================================================================= */
 @media screen {
   .pr-footer, 
   #print-report {
@@ -16,8 +22,11 @@
   }
 }
 
+/* =================================================================
+   2. REGRAS DE IMPRESSÃO (Aparece apenas na hora de gerar o PDF)
+   ================================================================= */
 @media print {
-  /* Zera as margens da página para permitir o design de ponta a ponta (Full Bleed) */
+  /* 1. ZERA A MARGEM FÍSICA: Permite que o rodapé vaze até o limite do papel */
   @page {
     size: 210mm 297mm;
     margin: 0mm !important; 
@@ -29,7 +38,7 @@
     box-sizing: border-box;
   }
 
-  /* Margens laterais aplicadas de forma segura apenas ao conteúdo interno */
+  /* 2. RECUPERA A MARGEM LATERAL: Diminuído para 6mm para a tabela ficar mais larga */
   html, body, #print-report {
     display: block !important;
     width: 100% !important;
@@ -44,116 +53,41 @@
     font-size: 10pt;
     line-height: 1.35;
     margin: 0 !important;
-    padding: 0 10mm !important; /* Margem lateral confortável para o texto */
+    padding: 0 6mm !important; /* Margem lateral do texto */
   }
 
-  /* Garante o espaço superior em todas as folhas */
+  /* 3. MARGENS TOPO E FUNDO: O cabeçalho e rodapé da tabela empurram o texto */
   #print-report > table > thead > tr > td {
-    height: 12mm; 
+    height: 12mm; /* Cria a margem superior em TODAS as páginas */
   }
 
   /* ==========================================
-     ESTRUTURA DO RODAPÉ MODERNO EM TFOOT (Full Bleed)
+     4. RODAPÉ VIA TFOOT (repete de forma confiável no mobile)
+     O <tfoot> de uma <table> é reconhecido nativamente pelo motor
+     de paginação de impressão em TODOS os navegadores, inclusive
+     mobile — diferente de position:fixed, que muitos motores de
+     impressão em Android/iOS não repetem corretamente por página.
      ========================================== */
   #print-report > table > tfoot > tr > td {
-    height: 32mm; /* Altura exata reservada para o rodapé */
+    height: 42mm; /* Margem de segurança acompanhando o tamanho do rodapé */
     position: relative;
     padding: 0 !important;
   }
 
-  .pr-modern-footer {
-    position: absolute;
-    bottom: 0;
-    left: -10mm; /* Compensa o padding lateral do body para colar de ponta a ponta */
-    width: calc(100% + 20mm); /* Estica exatamente de uma borda lateral à outra do A4 */
-    height: 32mm;
-    background-color: #050505 !important;
-    color: #ffffff !important;
-    display: flex;
-    align-items: center;
-    font-family: 'IBM Plex Sans', sans-serif;
+  .pr-footer {
+    display: block;
+    width: calc(100% + 12mm); /* compensa o padding lateral de 6mm de cada lado */
+    margin: 0 -6mm;           /* estica a imagem até a borda física do papel (full bleed) */
+    height: 42mm;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* Efeito de onda superior do rodapé moderno */
-  .pr-modern-footer::before {
-    content: "";
-    position: absolute;
-    top: -12px;
-    left: 0;
+  .pr-footer img {
     width: 100%;
-    height: 13px;
-    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="%23050505" fill-opacity="1" d="M0,192L80,176C160,160,320,128,480,128C640,128,800,160,960,165.3C1120,171,1280,149,1360,138.7L1440,128L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path></svg>') no-repeat center bottom;
-    background-size: 100% 100%;
-  }
-
-  .pr-mf-content {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 14mm; /* Distância interna das bordas da folha */
-    box-sizing: border-box;
-    position: relative;
-    top: 2px;
-  }
-
-  .pr-mf-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .pr-mf-logo-icon {
-    width: 30px;
-    height: 30px;
-    color: #fff;
-  }
-  .pr-mf-title {
-    font-size: 10.5pt;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
-  }
-  .pr-mf-subtitle {
-    font-size: 7.5pt;
-    font-weight: 400;
-    letter-spacing: 2px;
-    color: #cccccc !important;
-  }
-
-  .pr-mf-right {
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .pr-mf-contact-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    font-size: 8pt;
-    font-weight: 500;
-  }
-  .pr-mf-contact-row span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .pr-icon {
-    display: inline-flex;
-    width: 13px;
-    height: 13px;
-    color: #fff;
-  }
-  .pr-mf-site {
-    font-size: 7.5pt;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-  .pr-mf-cnpj {
-    font-size: 7pt;
-    color: #aaaaaa !important;
+    height: 100%;
+    display: block;
+    object-fit: fill; /* Força a imagem a achatar sem cortar as bordas */
   }
 
   /* Oculta interface do aplicativo no PDF */
@@ -168,7 +102,7 @@
     display: none !important;
   }
 
-  /* Marca d'água de fundo */
+  /* Marca d'água atualizada com o ícone */
   body::before {
     content: "";
     position: fixed; 
@@ -192,11 +126,14 @@
     height: auto;
   }
 
-  /* Estilos gerais de conteúdo impresso */
+  /* ==========================================
+     5. CORREÇÃO DAS QUEBRAS DE PÁGINA E TABELAS
+     ========================================== */
   .pr-page { display: block !important; position: static !important; }
   .pr-table tr, .pr-nc-block, .pr-special-row, .pr-photo-block, .pr-field-pair { break-inside: avoid; page-break-inside: avoid; }
   .pr-section-title { break-after: avoid; page-break-after: avoid; background-color: #111 !important; color: #fff !important; font-size: 9pt; font-weight: 700; text-transform: uppercase; padding: 5px 10px; margin-top: 14px; margin-bottom: 8px; letter-spacing: 0.6px; border-radius: 2px; }
 
+  /* ===== ESTILOS GERAIS DO DOCUMENTO ===== */
   .pr-header-block { border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; text-align: center; }
   .pr-title { font-size: 14pt; font-weight: 700; text-align: center; text-transform: uppercase; margin: 0 0 3px 0; letter-spacing: 0.6px; color: #000; }
   .pr-seq { text-align: center; font-size: 9.5pt; font-weight: 500; margin: 0 0 10px 0; color: #444; letter-spacing: 0.3px; }
