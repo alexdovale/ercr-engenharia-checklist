@@ -1,7 +1,6 @@
 /**
  * js/render.js
- * Gerenciador de Renderização da Interface e do PDF (Completo com Seção 13)
- * VERSÃO CORRIGIDA - Rodapé injetado no <tfoot> da tabela (compatível com mobile)
+ * Gerenciador de Renderização da Interface e do PDF (Com Rodapé HTML Moderno via TFOOT)
  */
 
 const UIRender = {
@@ -71,7 +70,6 @@ const UIRender = {
       const body = document.createElement('div');
       body.className = 'sheet-body';
 
-      // Tratamento Exclusivo da Seção 13 na Tela
       if (sec.n === 13) {
         body.innerHTML = `
           <div class="field" style="margin-bottom:15px;">
@@ -115,7 +113,7 @@ const UIRender = {
         `;
         sheet.appendChild(body);
         container.appendChild(sheet);
-        return; // Sai do forEach para não tentar renderizar como itens normais
+        return; 
       }
 
       if (Array.isArray(sec.items)) {
@@ -158,7 +156,7 @@ const UIRender = {
 
   /**
    * =================================================================
-   * 2. MOTOR DE IMPRESSÃO (BLOCO ÚNICO - ANTI-CORTE)
+   * 2. MOTOR DE IMPRESSÃO (RODAPÉ MODERNO EM HTML/VETOR)
    * =================================================================
    */
   fmtDateBR: (iso) => {
@@ -173,11 +171,31 @@ const UIRender = {
     return `Nº ${String(seq.number).padStart(4,'0')}/${seq.year}`;
   },
 
+  // 🔥 RODAPÉ MODERNO EM HTML/SVG (Sem imagens estáticas) 🔥
   prFooterHTML: () => {
-    const rodapeUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/rodap%C3%A9.png';
+    const svgEngrenagem = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+    const svgPhone = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
+    const svgInsta = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`;
+
     return `
-    <div class="pr-footer">
-      <img src="${rodapeUrl}" alt="Rodapé ERCR">
+    <div class="pr-modern-footer">
+      <div class="pr-mf-content">
+        <div class="pr-mf-left">
+          <div class="pr-mf-logo-icon">${svgEngrenagem}</div>
+          <div class="pr-mf-brand-group">
+            <div class="pr-mf-title">ERCR ENGENHARIA</div>
+            <div class="pr-mf-subtitle">MECÂNICA</div>
+          </div>
+        </div>
+        <div class="pr-mf-right">
+          <div class="pr-mf-contact-row">
+            <span><i class="pr-icon">${svgPhone}</i> (21) 96414-6270</span>
+            <span><i class="pr-icon">${svgInsta}</i> ERCR.ENGENHARIA</span>
+          </div>
+          <div class="pr-mf-site">WWW.ERCRENGENHARIA.COM.BR</div>
+          <div class="pr-mf-cnpj">CNPJ: 55.141.422/0001-79</div>
+        </div>
+      </div>
     </div>`;
   },
 
@@ -201,7 +219,6 @@ const UIRender = {
     const container = document.getElementById('print-report');
     if (!container) return;
     
-    // Funções utilitárias seguras
     const v = id => {
       const el = document.getElementById(id);
       if (!el) return '';
@@ -218,23 +235,19 @@ const UIRender = {
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const checkCircle = (cond) => cond ? '<span class="pr-circle filled"></span>' : '<span class="pr-circle"></span>';
 
-    // 🔥 LOGO OFICIAL DEFINIDA AQUI 🔥
     const logoOficialUrl = 'https://raw.githubusercontent.com/alexdovale/ercr-engenharia-checklist/main/assets/img/logo-ercr.png';
 
-    // 🔥 NOVO FORMATO DE ESTRUTURA PARA IMPRESSÃO PERFEITA 🔥
+    // Início da Estrutura baseada em tabela para repetição via TFOOT em qualquer mobile
     let html = `
       <table style="width: 100%; border: none; border-collapse: collapse;">
         <thead>
-          <tr><td style="border: none; padding: 0;">
-             <!-- O cabeçalho da tabela repete no topo de todas as páginas se houver espaço reservado -->
-          </td></tr>
+          <tr><td style="border: none; padding: 0;"></td></tr>
         </thead>
         <tbody>
           <tr><td style="border: none; padding: 0;">
             <div style="width: 100%;">
     `;
 
-    // 🔥 TOPO DO LAUDO COM A LOGO INJETADA 🔥
     html += `
       <div class="pr-header-block">
         <img src="${logoOficialUrl}" class="pr-top-logo" alt="ERCR Engenharia">
@@ -288,7 +301,6 @@ const UIRender = {
                <div><strong>1.12 Implemento/Carroceria:</strong> ${esc(v('implemento'))}</div>
              </div>`;
 
-    // Desenha as seções de 2 a 12 (Pula a 13 para tratar separadamente)
     if (Array.isArray(sectionsArray)) {
       sectionsArray.forEach(sec => {
         if (sec.n >= 2 && sec.n <= 12) {
@@ -326,7 +338,6 @@ const UIRender = {
       });
     }
 
-    // Tratamento exclusivo para impressão da Seção 13
     const sec13 = sectionsArray.find(s => s.n === 13);
     if (sec13) {
       const tipoMot = radioVal('tipoMotor13');
@@ -367,7 +378,6 @@ const UIRender = {
                ` : ''}`;
     }
 
-    // CONTINUA O FLUXO DIRETO PARA A SEÇÃO 14 (Sem quebrar a DIV principal)
     html += `<div class="pr-section-title">14. REGISTRO DE NÃO CONFORMIDADES</div>`;
     
     let hasNC = false;
@@ -404,7 +414,6 @@ const UIRender = {
     
     if (!hasNC) html += `<div class="pr-field-line" style="margin-bottom: 20px;">Nenhuma Não Conformidade registrada.</div>`;
 
-    // SEÇÃO 15
     const classFinal = radioVal('classificacao');
     html += `<div class="pr-section-title">15. CONCLUSÃO DA INSPEÇÃO</div>
              <div class="pr-nc-block" style="border-left-color: #111;">
@@ -416,43 +425,33 @@ const UIRender = {
              <div class="pr-field-line" style="margin-top:10px; margin-bottom: 30px;">
                <strong>Considerações Técnicas:</strong> ${esc(v('consideracoes'))}
              </div>`;
-
-    // === CAPTURA DE ASSINATURAS EM TEMPO REAL DO CANVAS ===
     
-    // Verifica e captura a assinatura do Inspetor
     const canvasInspetor = document.getElementById('sig-respIns');
-    let imgInspetorBase64 = null;
     if (canvasInspetor) {
       const blank = document.createElement('canvas');
       blank.width = canvasInspetor.width;
       blank.height = canvasInspetor.height;
       if (canvasInspetor.toDataURL() !== blank.toDataURL()) {
-        imgInspetorBase64 = canvasInspetor.toDataURL('image/png');
         if (!signatureData) signatureData = {};
         if (!signatureData.respIns) signatureData.respIns = {};
         signatureData.respIns.methodUsed = 'canvas';
-        signatureData.respIns.image = imgInspetorBase64;
+        signatureData.respIns.image = canvasInspetor.toDataURL('image/png');
       }
     }
 
-    // Verifica e captura a assinatura do Cliente
     const canvasCliente = document.getElementById('sig-repCli');
-    let imgClienteBase64 = null;
     if (canvasCliente) {
       const blank = document.createElement('canvas');
       blank.width = canvasCliente.width;
       blank.height = canvasCliente.height;
       if (canvasCliente.toDataURL() !== blank.toDataURL()) {
-        imgClienteBase64 = canvasCliente.toDataURL('image/png');
         if (!signatureData) signatureData = {};
         if (!signatureData.repCli) signatureData.repCli = {};
         signatureData.repCli.methodUsed = 'canvas';
-        signatureData.repCli.image = imgClienteBase64;
+        signatureData.repCli.image = canvasCliente.toDataURL('image/png');
       }
     }
-    // ========================================================
 
-    // ASSINATURAS
     html += `<div class="pr-section-title">ASSINATURAS</div>
              <div class="pr-field-pair" style="border:none; margin-top:20px; align-items: flex-end;">
                <div style="text-align:center; width: 48%;">
@@ -473,12 +472,9 @@ const UIRender = {
                </div>
              </div>`;
     
-    // 🔥 FECHAMENTO DA ESTRUTURA DE TABELA — RODAPÉ AGORA DENTRO DO TFOOT 🔥
-    // O <tfoot> repete de forma nativa e confiável em TODAS as páginas
-    // impressas, inclusive em navegadores mobile (Android/iOS), ao
-    // contrário do antigo .pr-footer com position:fixed.
+    // Fechamento da tabela principal e inclusão do rodapé no TFOOT
     html += `
-            </div> <!-- Fecha a div interna -->
+            </div>
           </td></tr>
         </tbody>
         <tfoot>
@@ -529,10 +525,6 @@ const UIRender = {
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
     html += `</div>`;
 
-    // OBS: o recibo normalmente cabe em 1 página, então manter o rodapé
-    // como position:fixed aqui tende a funcionar mesmo no mobile. Caso
-    // apareçam recibos de múltiplas páginas no futuro, aplicar a mesma
-    // técnica de tfoot usada em buildPrintReport.
     html += UIRender.prFooterHTML();
 
     const container = document.getElementById('print-report');
