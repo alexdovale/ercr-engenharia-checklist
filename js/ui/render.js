@@ -1,6 +1,7 @@
 /**
  * js/render.js
  * Gerenciador de Renderização da Interface e do PDF (Completo com Seção 13)
+ * VERSÃO CORRIGIDA - Rodapé injetado no <tfoot> da tabela (compatível com mobile)
  */
 
 const UIRender = {
@@ -472,22 +473,21 @@ const UIRender = {
                </div>
              </div>`;
     
-    // 🔥 FECHAMENTO DA ESTRUTURA DE TABELA 🔥
+    // 🔥 FECHAMENTO DA ESTRUTURA DE TABELA — RODAPÉ AGORA DENTRO DO TFOOT 🔥
+    // O <tfoot> repete de forma nativa e confiável em TODAS as páginas
+    // impressas, inclusive em navegadores mobile (Android/iOS), ao
+    // contrário do antigo .pr-footer com position:fixed.
     html += `
             </div> <!-- Fecha a div interna -->
           </td></tr>
         </tbody>
         <tfoot>
           <tr><td style="border: none; padding: 0;">
-            <!-- O tfoot empurra o rodapé para baixo e impede que o texto invada a área da imagem -->
-            <div style="height: 55mm;"></div> 
+            ${UIRender.prFooterHTML()}
           </td></tr>
         </tfoot>
       </table>
     `;
-
-    // Injeta a imagem do rodapé que agora ficará fixada no espaço reservado pelo tfoot
-    html += UIRender.prFooterHTML();
 
     container.innerHTML = html;
   },
@@ -529,6 +529,10 @@ const UIRender = {
     html += `<p style="font-size:8.5px;color:#777;margin-top:20px;">Este recibo é um comprovante informal e não substitui a Nota Fiscal.</p>`;
     html += `</div>`;
 
+    // OBS: o recibo normalmente cabe em 1 página, então manter o rodapé
+    // como position:fixed aqui tende a funcionar mesmo no mobile. Caso
+    // apareçam recibos de múltiplas páginas no futuro, aplicar a mesma
+    // técnica de tfoot usada em buildPrintReport.
     html += UIRender.prFooterHTML();
 
     const container = document.getElementById('print-report');
