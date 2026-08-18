@@ -1,7 +1,7 @@
 /**
  * css/print.css
  * Estilos otimizados para Impressão - FULL BLEED (Rodapé Ponta a Ponta)
- * VERSÃO ATUALIZADA COM CORREÇÕES PARA MOBILE E DESKTOP
+ * VERSÃO CORRIGIDA - Rodapé via TFOOT (compatível com mobile)
  */
 
 /* =================================================================
@@ -60,9 +60,34 @@
   #print-report > table > thead > tr > td {
     height: 12mm; /* Cria a margem superior em TODAS as páginas */
   }
-  
+
+  /* ==========================================
+     4. RODAPÉ VIA TFOOT (repete de forma confiável no mobile)
+     O <tfoot> de uma <table> é reconhecido nativamente pelo motor
+     de paginação de impressão em TODOS os navegadores, inclusive
+     mobile — diferente de position:fixed, que muitos motores de
+     impressão em Android/iOS não repetem corretamente por página.
+     ========================================== */
   #print-report > table > tfoot > tr > td {
-    height: 42mm; /* Margem de segurança acompanhando o novo tamanho do rodapé */
+    height: 42mm; /* Margem de segurança acompanhando o tamanho do rodapé */
+    position: relative;
+    padding: 0 !important;
+  }
+
+  .pr-footer {
+    display: block;
+    width: calc(100% + 12mm); /* compensa o padding lateral de 6mm de cada lado */
+    margin: 0 -6mm;           /* estica a imagem até a borda física do papel (full bleed) */
+    height: 42mm;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .pr-footer img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: fill; /* Força a imagem a achatar sem cortar as bordas */
   }
 
   /* Oculta interface do aplicativo no PDF */
@@ -99,30 +124,6 @@
     margin: 0 auto 15px auto;
     max-width: 220px;
     height: auto;
-  }
-
-  /* ==========================================
-     4. RODAPÉ DE PONTA A PONTA (FULL BLEED)
-     ========================================== */
-  .pr-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 210mm; /* Preenche a largura total do A4 zerado */
-    height: 42mm; /* Tamanho do rodapé mais achatado que você ajustou */
-    display: block; 
-    z-index: 9999;
-    /* Correções adicionadas para forçar o mobile a respeitar o rodapé */
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    transform: translateZ(0); /* Força a renderização por hardware */
-  }
-
-  .pr-footer img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: fill; /* Força a imagem a achatar sem cortar as bordas */
   }
 
   /* ==========================================
