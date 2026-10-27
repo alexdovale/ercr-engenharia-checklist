@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "Inspection": {
+      "title": "Inspection",
+      "description": "Veicular inspection and technical checklist record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the inspection record",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner or inspector user identifier",
+          "maxLength": 128
+        },
+        "creatorEmail": {
+          "type": "string",
+          "description": "Email of the inspector who created or modified the record",
+          "maxLength": 256
+        },
+        "status": {
+          "type": "string",
+          "description": "Inspection workflow status (rascunho, pendente_revisao, revisado)",
+          "enum": ["rascunho", "pendente_revisao", "revisado"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp in ISO format",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp in ISO format",
+          "maxLength": 64
+        },
+        "seq": {
+          "type": "object",
+          "description": "Sequential report number and year"
+        },
+        "text": {
+          "type": "object",
+          "description": "Inspection form text fields including plate, client, measurements"
+        },
+        "radios": {
+          "type": "object",
+          "description": "Checklist radio button answers"
+        },
+        "photoUrls": {
+          "type": "object",
+          "description": "Photo URLs mapped by checklist item"
+        },
+        "signatures": {
+          "type": "object",
+          "description": "Signatures and technical verification data"
+        }
+      },
+      "required": ["id", "userId", "status", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/inspections/{inspectionId}": {
+      "schema": "Inspection",
+      "description": "Cloud synchronized veicular inspections"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'alexdovale222@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidInspection(data) {
+      return data.keys().hasAll(['id', 'userId', 'status', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.status in ['rascunho', 'pendente_revisao', 'revisado'] &&
+             data.updatedAt is string && data.updatedAt.size() <= 64 &&
+             (!('creatorEmail' in data) || (data.creatorEmail is string && data.creatorEmail.size() <= 256)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+             (!('text' in data) || data.text is map) &&
+             (!('radios' in data) || data.radios is map) &&
+             (!('photoUrls' in data) || data.photoUrls is map) &&
+             (!('seq' in data) || data.seq == null || data.seq is map) &&
+             (!('signatures' in data) || data.signatures == null || data.signatures is map);
+    }
+
+    // Inspections collection
+    match /inspections/{inspectionId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(inspectionId) && isValidInspection(incoming()) && (incoming().userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && isValidId(inspectionId) && isValidInspection(incoming()) && (existing().userId == request.auth.uid || isAdmin()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(inspectionId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // Connection testing endpoint
+    match /_connection_test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
