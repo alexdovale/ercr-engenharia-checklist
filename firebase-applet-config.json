@@ -1,12 +1,10 @@
 {
-  "projectId": "pauta-ce162",
-  "appId": "1:87113750208:web:48a9f4dda8e6d5c099bf25",
-  "apiKey": "AIzaSyBbhnzJ-8n31UzNYuGmD_4jXMfkV864Pzg",
-  "authDomain": "pauta-ce162.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-ercrengenhariach-dcc932ec-daac-4183-9760-25b9a102eeec",
-  "storageBucket": "pauta-ce162.firebasestorage.app",
-  "messagingSenderId": "87113750208",
-  "measurementId": "",
-  "oAuthClientId": "87113750208-942s43b1u9nevotj6pm0i2ju5mai127q.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "ercr-engenharia-checklist",
+  "appId": "1:333973981305:web:6bc856e4b0fb2621f6aca8",
+  "apiKey": "AIzaSyBD1jDTCBbDC4iV9p-tGIXSt69d52t4aIw",
+  "authDomain": "ercr-engenharia-checklist.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "ercr-engenharia-checklist.firebasestorage.app",
+  "messagingSenderId": "333973981305",
+  "measurementId": "G-8M134SKP6H"
 }
