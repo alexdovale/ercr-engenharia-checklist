@@ -86,29 +86,54 @@ export const InspectionList: React.FC<InspectionListProps> = ({
     setTimeout(() => setToastMessage(null), 4500);
   };
 
-  // Synchronize with Google Cloud Firestore
-  const handleSyncWithFirestore = async () => {
+  // Synchronize with Google Cloud Firestore (silent = automático, sem alertas/modais)
+  const syncingRef = useRef(false);
+  const handleSyncWithFirestore = async (silent: boolean | React.MouseEvent = false) => {
+    const isSilent = silent === true;
     if (!auth.currentUser) {
-      setSyncModalOpen(true);
+      if (!isSilent) setSyncModalOpen(true);
       return;
     }
+    if (syncingRef.current) return;
+    syncingRef.current = true;
 
     setSyncing(true);
     try {
       const res = await FirestoreSyncService.synchronizeAll();
       setSyncResult(res);
       setLastSyncTime(res.lastSyncTime);
-      showToast(`☁️ Nuvem sincronizada! (${res.pushed} enviadas, ${res.pulled} recebidas)`);
+      if (!isSilent || res.pushed > 0 || res.pulled > 0) {
+        showToast(`☁️ Nuvem sincronizada! (${res.pushed} enviadas, ${res.pulled} recebidas)`);
+      }
       if (onBackupImported) {
         onBackupImported();
       }
     } catch (err: any) {
       console.error('Erro ao sincronizar com Firestore:', err);
-      alert('Erro ao sincronizar com Firestore: ' + (err.message || 'Falha na conexão com a nuvem.'));
+      if (!isSilent) {
+        alert('Erro ao sincronizar com Firestore: ' + (err.message || 'Falha na conexão com a nuvem.'));
+      }
     } finally {
+      syncingRef.current = false;
       setSyncing(false);
     }
   };
+
+  // Sincronização automática: ao entrar com Google, ao voltar a internet e a cada 2 minutos
+  useEffect(() => {
+    if (!cloudUser) return;
+    handleSyncWithFirestore(true);
+    const onOnline = () => handleSyncWithFirestore(true);
+    window.addEventListener('online', onOnline);
+    const timer = window.setInterval(() => {
+      if (navigator.onLine) handleSyncWithFirestore(true);
+    }, 120000);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudUser?.uid]);
 
   // Connect Google account and trigger sync
   const handleConnectGoogle = async () => {
@@ -547,35 +572,6 @@ export const InspectionList: React.FC<InspectionListProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Cloud Sync Action (Firestore) */}
-          <button
-            onClick={handleSyncWithFirestore}
-            disabled={syncing}
-            title="Sincronizar todas as inspeções com o banco de dados Google Cloud Firestore"
-            style={{
-              background: cloudUser ? '#1B5E20' : '#1a1a1a',
-              color: '#fff',
-              border: `1px solid ${cloudUser ? '#4CAF50' : '#444'}`,
-              borderRadius: '6px',
-              padding: '8px 13px',
-              fontSize: '12.5px',
-              fontWeight: '600',
-              cursor: syncing ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-              transition: 'background 0.2s'
-            }}
-          >
-            {syncing ? (
-              <RefreshCw size={15} className="animate-spin" />
-            ) : (
-              <Cloud size={15} color={cloudUser ? '#81C784' : '#4CAF50'} />
-            )}
-            {syncing ? 'Sincronizando Nuvem...' : 'Sincronizar Nuvem (Firestore)'}
-          </button>
-
           {/* Backup Action: Export JSON */}
           <button
             onClick={handleExportBackupJSON}
